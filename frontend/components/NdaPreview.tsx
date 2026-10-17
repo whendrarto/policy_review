@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Block, Run } from "@/lib/nda/types";
 
 function Runs({ runs }: { runs: Run[] }) {
@@ -32,7 +33,9 @@ function Runs({ runs }: { runs: Run[] }) {
   });
 }
 
-function PreviewBlock({ block }: { block: Block }) {
+// Memoised because the Standard Terms blocks are the same objects on every render, so
+// typing in the form only re-renders the Cover Page.
+const PreviewBlock = memo(function PreviewBlock({ block }: { block: Block }) {
   switch (block.type) {
     case "heading":
       if (block.level === 1) return <h1 className="mb-4 text-center text-2xl font-bold">{block.text}</h1>;
@@ -102,7 +105,7 @@ function PreviewBlock({ block }: { block: Block }) {
     case "pageBreak":
       return <hr className="my-10 border-dashed border-zinc-300" />;
   }
-}
+});
 
 export function NdaPreview({ blocks }: { blocks: Block[] }) {
   return (

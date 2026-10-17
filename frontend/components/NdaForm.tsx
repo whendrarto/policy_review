@@ -7,9 +7,11 @@ type Props = {
   onChange: (form: NdaFormValues) => void;
 };
 
-const baseInputClass =
-  "rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-xs focus:border-sky-500 focus:ring-2 focus:ring-sky-200 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-400";
-const inputClass = `w-full ${baseInputClass}`;
+// Colours are kept apart from the layout classes so that only one colour set is ever applied:
+// Tailwind decides conflicting classes by stylesheet order, not by order in the class list.
+const baseInputClass = "rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none";
+const inputColors = "border-zinc-300 bg-white text-zinc-900 focus:border-sky-500 focus:ring-sky-200";
+const inputClass = `w-full ${baseInputClass} ${inputColors}`;
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -30,12 +32,21 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-type YearsInputProps = { value: number; disabled: boolean; onChange: (years: number) => void; label: string; errorId: string };
+type YearsInputProps = {
+  value: number;
+  selected: boolean;
+  onSelect: () => void;
+  onChange: (years: number) => void;
+  label: string;
+  errorId: string;
+};
 
-function YearsInput({ value, disabled, onChange, label, errorId }: YearsInputProps) {
+// Not disabled when its option isn't selected: a disabled input ignores clicks, so clicking
+// the greyed-out box would do nothing. Focusing it selects its option instead.
+function YearsInput({ value, selected, onSelect, onChange, label, errorId }: YearsInputProps) {
   // The typed text is kept separately so in-progress input isn't reformatted from the number.
   const [text, setText] = useState(Number.isNaN(value) ? "" : String(value));
-  const invalid = !disabled && !isValidYears(value);
+  const invalid = selected && !isValidYears(value);
   return (
     <input
       type="number"
@@ -45,9 +56,15 @@ function YearsInput({ value, disabled, onChange, label, errorId }: YearsInputPro
       aria-label={label}
       aria-invalid={invalid}
       aria-describedby={invalid ? errorId : undefined}
-      className={`${baseInputClass} w-20 py-1 ${invalid ? "border-red-500 focus:border-red-500 focus:ring-red-200" : ""}`}
+      className={`${baseInputClass} w-20 py-1 ${
+        invalid
+          ? "border-red-500 bg-white text-zinc-900 focus:border-red-500 focus:ring-red-200"
+          : selected
+            ? inputColors
+            : "border-zinc-300 bg-zinc-100 text-zinc-400 focus:border-sky-500 focus:ring-sky-200"
+      }`}
       value={text}
-      disabled={disabled}
+      onFocus={onSelect}
       onChange={(e) => {
         setText(e.target.value);
         onChange(e.target.value === "" ? NaN : Number(e.target.value));
@@ -90,7 +107,8 @@ export function NdaForm({ form, onChange }: Props) {
             <YearsInput
               label="MNDA term in years"
               value={form.mndaTermYears}
-              disabled={form.mndaTerm !== "expires"}
+              selected={form.mndaTerm === "expires"}
+              onSelect={() => set("mndaTerm", "expires")}
               onChange={(years) => set("mndaTermYears", years)}
               errorId={mndaYearsErrorId}
             />
@@ -120,7 +138,8 @@ export function NdaForm({ form, onChange }: Props) {
             <YearsInput
               label="Term of confidentiality in years"
               value={form.confidentialityYears}
-              disabled={form.confidentialityTerm !== "years"}
+              selected={form.confidentialityTerm === "years"}
+              onSelect={() => set("confidentialityTerm", "years")}
               onChange={(years) => set("confidentialityYears", years)}
               errorId={confidentialityYearsErrorId}
             />

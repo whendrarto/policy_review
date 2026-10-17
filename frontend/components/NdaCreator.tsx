@@ -3,24 +3,23 @@
 import { useState, useSyncExternalStore } from "react";
 import { buildNdaDocument, countBlankFields, pdfFileName } from "@/lib/nda/document";
 import { unsupportedPdfChars } from "@/lib/nda/pdfFont";
+import { subscribeToDateChange, todayIso } from "@/lib/nda/today";
 import { defaultForm, type Block, type NdaForm as NdaFormValues } from "@/lib/nda/types";
 import { NdaForm } from "./NdaForm";
 import { NdaPreview } from "./NdaPreview";
 
-function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-const noSubscription = () => () => {};
-
 export function NdaCreator({ standardTerms }: { standardTerms: Block[] }) {
-  // The Effective Date defaults to today. The date is read on the client only, so the
-  // prerendered page (built on another day) still hydrates without a mismatch.
-  const today = useSyncExternalStore(noSubscription, todayIso, () => "");
-  const [draft, setDraft] = useState<NdaFormValues | null>(null);
-  const form = draft ?? { ...defaultForm(), effectiveDate: today };
+  // The Effective Date follows today until the user changes it. The date is read on the
+  // client only, so the prerendered page (built on another day) hydrates without a mismatch.
+  const today = useSyncExternalStore(subscribeToDateChange, () => todayIso(), () => "");
+  const [draft, setDraft] = useState<NdaFormValues>(defaultForm);
+  const [chosenEffectiveDate, setChosenEffectiveDate] = useState<string | null>(null);
+  const form = { ...draft, effectiveDate: chosenEffectiveDate ?? today };
+
+  function updateForm(next: NdaFormValues) {
+    if (next.effectiveDate !== form.effectiveDate) setChosenEffectiveDate(next.effectiveDate);
+    setDraft(next);
+  }
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,7 +90,7 @@ export function NdaCreator({ standardTerms }: { standardTerms: Block[] }) {
 
       <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(340px,440px)_1fr]">
         <aside className="border-zinc-200 bg-white px-6 py-6 lg:overflow-y-auto lg:border-r">
-          <NdaForm form={form} onChange={setDraft} />
+          <NdaForm form={form} onChange={updateForm} />
         </aside>
         <main className="bg-zinc-100 px-4 py-8 lg:overflow-y-auto" aria-label="Document preview">
           <NdaPreview blocks={blocks} />

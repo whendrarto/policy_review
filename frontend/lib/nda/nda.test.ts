@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import * as fontkit from "fontkit";
 import { describe, expect, it } from "vitest";
-import { buildCoverPage, buildNdaDocument, countBlankFields, formatDate, pdfFileName } from "./document";
+import { blockRuns, buildCoverPage, buildNdaDocument, countBlankFields, formatDate, pdfFileName } from "./document";
 import { parseInline, parseStandardTerms } from "./parse";
 import { PDF_FONT_FILES, PDF_FONT_RANGES, unsupportedPdfChars } from "./pdfFont";
 import { loadStandardTerms } from "./template";
@@ -24,7 +24,7 @@ function filledForm(): NdaForm {
 
 const textOf = (blocks: Block[]) =>
   blocks
-    .flatMap((b) => ("runs" in b ? b.runs : b.type === "parties" ? b.rows.flatMap((r) => r.values.flat()) : []))
+    .flatMap(blockRuns)
     .map((r) => r.text)
     .join("");
 
@@ -154,6 +154,13 @@ describe("pdfFileName", () => {
     form.party2.company = "Globex";
     expect(pdfFileName(form)).toBe("Mutual-NDA-Acme-Inc-Globex.pdf");
     expect(pdfFileName(defaultForm())).toBe("Mutual-NDA.pdf");
+  });
+
+  it("drops accents instead of turning accented letters into hyphens", () => {
+    const form = filledForm();
+    form.party1.company = "Société Générale";
+    form.party2.company = "Łódź Straße ApS";
+    expect(pdfFileName(form)).toBe("Mutual-NDA-Societe-Generale-Lodz-Strasse-ApS.pdf");
   });
 });
 

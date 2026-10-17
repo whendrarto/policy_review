@@ -133,20 +133,31 @@ export function buildNdaDocument(form: NdaForm, standardTerms: Block[]): Block[]
   return [...buildCoverPage(form), { type: "pageBreak" }, ...standardTerms];
 }
 
+/** The runs of a block's body; for the signature table, its cells. */
+export function blockRuns(block: Block): Run[] {
+  if (block.type === "parties") return block.rows.flatMap((row) => row.values.flat());
+  return "runs" in block ? block.runs : [];
+}
+
 /** Number of fields still showing a template placeholder, ignoring options that aren't selected. */
 export function countBlankFields(blocks: Block[]): number {
-  const runs = blocks.flatMap((block) => {
-    if (block.type === "parties") return block.rows.flatMap((row) => row.values.flat());
-    if (block.type === "option" && !block.checked) return [];
-    return "runs" in block ? block.runs : [];
-  });
+  const runs = blocks.flatMap((block) => (block.type === "option" && !block.checked ? [] : blockRuns(block)));
   return runs.filter((run) => run.type === "field" && !run.filled).length;
 }
+
+// Letters that Unicode normalisation doesn't split into a base letter plus an accent.
+const TRANSLITERATIONS: Record<string, string> = {
+  ł: "l", Ł: "L", ø: "o", Ø: "O", đ: "d", Đ: "D", ı: "i", ß: "ss", æ: "ae", Æ: "AE", œ: "oe", Œ: "OE", þ: "th", Þ: "Th",
+};
 
 export function pdfFileName(form: NdaForm): string {
   const slug = (value: string) =>
     value
       .trim()
+      // "Société Générale" → "Societe Generale", not "Soci-t-G-n-rale".
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/./g, (char) => TRANSLITERATIONS[char] ?? char)
       .replace(/[^A-Za-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
   const parts = ["Mutual-NDA", slug(form.party1.company), slug(form.party2.company)].filter(Boolean);
