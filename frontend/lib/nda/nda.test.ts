@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import * as fontkit from "fontkit";
 import { describe, expect, it } from "vitest";
 import { buildCoverPage, buildNdaDocument, countBlankFields, formatDate, pdfFileName } from "./document";
 import { parseInline, parseStandardTerms } from "./parse";
+import { PDF_FONT_FILES, PDF_FONT_RANGES, unsupportedPdfChars } from "./pdfFont";
+import { loadStandardTerms } from "./template";
 import { defaultForm, type Block, type NdaForm } from "./types";
 
 const termsMarkdown = readFileSync(path.join(import.meta.dirname, "../../../templates/mutual-nda/standard-terms.md"), "utf8");
@@ -63,6 +66,12 @@ describe("parseStandardTerms", () => {
   });
 });
 
+describe("loadStandardTerms", () => {
+  it("loads the bundled Standard Terms from templates/", () => {
+    expect(loadStandardTerms()).toEqual(parseStandardTerms(termsMarkdown));
+  });
+});
+
 describe("buildCoverPage", () => {
   it("fills in the form values", () => {
     const text = textOf(buildCoverPage(filledForm()));
@@ -92,7 +101,10 @@ describe("buildCoverPage", () => {
   });
 
   it("treats an invalid year count as blank", () => {
-    expect(textOf(buildCoverPage({ ...filledForm(), mndaTermYears: NaN }))).toContain("Expires [1 year(s)] from");
+    for (const years of [NaN, 0, 1.5, 100, 150, -2]) {
+      expect(textOf(buildCoverPage({ ...filledForm(), mndaTermYears: years }))).toContain("Expires [1 year(s)] from");
+    }
+    expect(textOf(buildCoverPage({ ...filledForm(), mndaTermYears: 99 }))).toContain("Expires 99 years from");
   });
 
   it("does not count blanks in options that are not selected", () => {
@@ -121,6 +133,18 @@ describe("formatDate", () => {
     expect(formatDate("2026-01-01")).toBe("January 1, 2026");
     expect(formatDate("")).toBe("");
   });
+
+  it("rejects dates that are not on the calendar instead of rolling them over", () => {
+    expect(formatDate("2026-02-31")).toBe("");
+    expect(formatDate("2026-13-01")).toBe("");
+    expect(formatDate("2025-02-29")).toBe("");
+    expect(formatDate("2024-02-29")).toBe("February 29, 2024");
+    expect(formatDate("0000-01-01")).toBe("");
+  });
+
+  it("shows years beyond 9999 rather than treating them as blank", () => {
+    expect(formatDate("20266-01-01")).toBe("January 1, 20266");
+  });
 });
 
 describe("pdfFileName", () => {
@@ -130,5 +154,29 @@ describe("pdfFileName", () => {
     form.party2.company = "Globex";
     expect(pdfFileName(form)).toBe("Mutual-NDA-Acme-Inc-Globex.pdf");
     expect(pdfFileName(defaultForm())).toBe("Mutual-NDA.pdf");
+  });
+});
+
+describe("PDF font coverage", () => {
+  const fontsDir = path.join(import.meta.dirname, "../../public/fonts");
+
+  it("matches the characters the font files can draw", () => {
+    const [regular, bold, italic] = Object.values(PDF_FONT_FILES).map(
+      (file) => new Set((fontkit.openSync(path.join(fontsDir, file)) as fontkit.Font).characterSet),
+    );
+    for (const [start, end] of PDF_FONT_RANGES) {
+      for (let cp = start; cp <= end; cp++) {
+        expect(regular.has(cp) && bold.has(cp) && italic.has(cp), `U+${cp.toString(16)}`).toBe(true);
+      }
+    }
+  });
+
+  it("covers the legal text and accented names", () => {
+    expect(unsupportedPdfChars(termsMarkdown, textOf(buildCoverPage(defaultForm())))).toEqual([]);
+    expect(unsupportedPdfChars("Łukasz Żak", "Ştefan SRL", "Société Générale", "Ζωή", "Дмитрий", "Line 1\nLine 2")).toEqual([]);
+  });
+
+  it("reports characters it cannot draw", () => {
+    expect(unsupportedPdfChars("李明 Co.", "Hi 😀")).toEqual(["李", "明", "😀"]);
   });
 });

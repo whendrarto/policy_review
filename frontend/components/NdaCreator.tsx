@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { buildNdaDocument, countBlankFields, pdfFileName } from "@/lib/nda/document";
+import { unsupportedPdfChars } from "@/lib/nda/pdfFont";
 import { defaultForm, type Block, type NdaForm as NdaFormValues } from "@/lib/nda/types";
 import { NdaForm } from "./NdaForm";
 import { NdaPreview } from "./NdaPreview";
@@ -25,13 +26,21 @@ export function NdaCreator({ standardTerms }: { standardTerms: Block[] }) {
 
   const blocks = buildNdaDocument(form, standardTerms);
   const blankFields = countBlankFields(blocks);
+  const unprintable = unsupportedPdfChars(
+    form.purpose,
+    form.governingLaw,
+    form.jurisdiction,
+    form.modifications,
+    ...[form.party1, form.party2].flatMap((party) => Object.values(party)),
+  );
 
   async function download() {
     setDownloading(true);
     setError(null);
     try {
       // react-pdf is large and browser-only, so load it on demand.
-      const [{ pdf }, { NdaPdf }] = await Promise.all([import("@react-pdf/renderer"), import("./NdaPdf")]);
+      const [{ pdf }, { NdaPdf, registerPdfFonts }] = await Promise.all([import("@react-pdf/renderer"), import("./NdaPdf")]);
+      registerPdfFonts((file) => new URL(`/fonts/${file}`, window.location.href).href);
       const blob = await pdf(<NdaPdf blocks={blocks} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -68,6 +77,11 @@ export function NdaCreator({ standardTerms }: { standardTerms: Block[] }) {
             {downloading ? "Preparing PDF…" : "Download PDF"}
           </button>
         </div>
+        {unprintable.length > 0 && (
+          <p role="alert" className="w-full text-sm text-amber-800">
+            These characters can’t be printed in the PDF and will be missing from it: {unprintable.join(" ")}
+          </p>
+        )}
         {error && (
           <p role="alert" className="w-full text-sm text-red-700">
             {error}

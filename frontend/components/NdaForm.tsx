@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { isValidYears, MAX_YEARS, MIN_YEARS } from "@/lib/nda/document";
 import type { NdaForm as NdaFormValues, Party } from "@/lib/nda/types";
 
 type Props = {
@@ -29,24 +30,46 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function YearsInput({ value, disabled, onChange, label }: { value: number; disabled: boolean; onChange: (years: number) => void; label: string }) {
+type YearsInputProps = { value: number; disabled: boolean; onChange: (years: number) => void; label: string; errorId: string };
+
+function YearsInput({ value, disabled, onChange, label, errorId }: YearsInputProps) {
+  // The typed text is kept separately so in-progress input isn't reformatted from the number.
+  const [text, setText] = useState(Number.isNaN(value) ? "" : String(value));
+  const invalid = !disabled && !isValidYears(value);
   return (
     <input
       type="number"
-      min={1}
-      max={99}
+      min={MIN_YEARS}
+      max={MAX_YEARS}
+      step={1}
       aria-label={label}
-      className={`${baseInputClass} w-20 py-1`}
-      value={Number.isNaN(value) ? "" : value}
+      aria-invalid={invalid}
+      aria-describedby={invalid ? errorId : undefined}
+      className={`${baseInputClass} w-20 py-1 ${invalid ? "border-red-500 focus:border-red-500 focus:ring-red-200" : ""}`}
+      value={text}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.valueAsNumber)}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(e.target.value === "" ? NaN : Number(e.target.value));
+      }}
     />
+  );
+}
+
+function YearsError({ id, show }: { id: string; show: boolean }) {
+  if (!show) return null;
+  return (
+    <p id={id} className="pl-6 text-xs text-red-700">
+      Enter a whole number of years from {MIN_YEARS} to {MAX_YEARS}.
+    </p>
   );
 }
 
 export function NdaForm({ form, onChange }: Props) {
   const set = <K extends keyof NdaFormValues>(key: K, value: NdaFormValues[K]) => onChange({ ...form, [key]: value });
   const setParty = (key: "party1" | "party2", field: keyof Party, value: string) => set(key, { ...form[key], [field]: value });
+  const mndaYearsErrorId = useId();
+  const confidentialityYearsErrorId = useId();
 
   return (
     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
@@ -69,9 +92,11 @@ export function NdaForm({ form, onChange }: Props) {
               value={form.mndaTermYears}
               disabled={form.mndaTerm !== "expires"}
               onChange={(years) => set("mndaTermYears", years)}
+              errorId={mndaYearsErrorId}
             />
             year(s) from Effective Date
           </label>
+          <YearsError id={mndaYearsErrorId} show={form.mndaTerm === "expires" && !isValidYears(form.mndaTermYears)} />
           <label className="flex items-center gap-2 text-sm">
             <input
               type="radio"
@@ -97,9 +122,14 @@ export function NdaForm({ form, onChange }: Props) {
               value={form.confidentialityYears}
               disabled={form.confidentialityTerm !== "years"}
               onChange={(years) => set("confidentialityYears", years)}
+              errorId={confidentialityYearsErrorId}
             />
             year(s) from Effective Date
           </label>
+          <YearsError
+            id={confidentialityYearsErrorId}
+            show={form.confidentialityTerm === "years" && !isValidYears(form.confidentialityYears)}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input
               type="radio"
