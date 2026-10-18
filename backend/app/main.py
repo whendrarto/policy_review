@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from . import api
+from . import api, auth_api, documents_api
 from .config import Settings
 from .db import init_db
 from .documents import load_registry
@@ -27,10 +27,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=list(settings.cors_origins),
-            allow_methods=["GET", "POST"],
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
             allow_headers=["Content-Type"],
+            # The session is a cookie, which cross-origin requests only send with credentials.
+            allow_credentials=True,
         )
     app.include_router(api.router)
+    app.include_router(auth_api.router)
+    app.include_router(documents_api.router)
     # Mounted last so it never shadows the API. html=True serves dir/index.html, which
     # matches the frontend's static export (trailingSlash: true).
     if settings.static_dir and settings.static_dir.is_dir():

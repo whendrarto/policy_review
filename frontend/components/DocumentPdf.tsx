@@ -35,6 +35,8 @@ const styles = StyleSheet.create({
   // "5.3" needs more room than "1." or "a.".
   sectionNumber: { width: 26 },
   flex: { flex: 1 },
+  notice: { marginVertical: 8, padding: 8, borderWidth: 0.75, borderLeftWidth: 3, borderColor: "#999", borderLeftColor: "#000", backgroundColor: "#f3f3f3" },
+  noticeTitle: { fontWeight: "bold", marginBottom: 2 },
   checkbox: { width: 9, height: 9, borderWidth: 0.75, borderColor: "#000", marginTop: 3, marginRight: 8, fontSize: 7, textAlign: "center", lineHeight: 1.1 },
   bold: { fontWeight: "bold" },
   link: { color: "#000", textDecoration: "underline" },
@@ -80,6 +82,13 @@ function PdfBlock({ block }: { block: Block }) {
       return <Text style={styles[`h${block.level}`]}>{block.text}</Text>;
     case "note":
       return <Text style={styles.note}>{block.text}</Text>;
+    case "notice":
+      return (
+        <View style={styles.notice} wrap={false}>
+          <Text style={styles.noticeTitle}>{block.title}</Text>
+          <Text>{block.text}</Text>
+        </View>
+      );
     case "paragraph":
       return (
         <Text style={styles.paragraph}>

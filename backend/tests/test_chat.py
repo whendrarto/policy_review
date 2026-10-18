@@ -12,6 +12,8 @@ from app.documents import load_registry
 from app.main import create_app
 from app.prompt import build_system_prompt
 
+from conftest import sign_up
+
 REGISTRY = load_registry(DEFAULT_TEMPLATES_DIR)
 NDA = REGISTRY.get("mutual-nda")
 
@@ -60,13 +62,13 @@ class FakeModel:
 
 
 @pytest.fixture
-def chat_client(client):
+def chat_client(signed_in_client):
     def use(model: FakeModel):
-        client.app.dependency_overrides[get_chat_model] = lambda: model
-        return client
+        signed_in_client.app.dependency_overrides[get_chat_model] = lambda: model
+        return signed_in_client
 
     yield use
-    client.app.dependency_overrides.clear()
+    signed_in_client.app.dependency_overrides.clear()
 
 
 # Drafting a document
@@ -196,8 +198,15 @@ def test_chat_drops_updates_for_fields_the_document_lacks(chat_client):
 # Errors
 
 
-def test_chat_without_api_key_is_503(client):
+def test_chat_requires_signing_in(client):
+    client.app.dependency_overrides[get_chat_model] = lambda: FakeModel()
     response = client.post("/api/chat", json=chat_body())
+    client.app.dependency_overrides.clear()
+    assert response.status_code == 401
+
+
+def test_chat_without_api_key_is_503(signed_in_client):
+    response = signed_in_client.post("/api/chat", json=chat_body())
     assert response.status_code == 503
     assert response.json() == {"detail": "AI chat is not configured on this server."}
 
@@ -245,6 +254,7 @@ def test_chat_with_configured_key_uses_litellm(tmp_path, monkeypatch):
     monkeypatch.setattr(chat, "completion", fake_completion)
     settings = Settings(database_path=tmp_path / "prelegal.db", static_dir=None, openrouter_api_key="test-key")
     with TestClient(create_app(settings)) as client:
+        sign_up(client)
         response = client.post("/api/chat", json=chat_body())
     assert response.json() == {"reply": "Hello", "documentType": None, "updates": {"governingLaw": "Delaware"}}
     assert seen["model"] == "openrouter/openai/gpt-oss-120b"

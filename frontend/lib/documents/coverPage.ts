@@ -7,6 +7,14 @@ import type { Block, DocumentDef, DocumentForm, FieldDef, Party, PartyRow, Run }
 // Key Terms page in the same style. Blank fields show a bracketed placeholder so the user can
 // see what is still missing.
 
+// Shown under the title of every cover page, so it is in the preview and the PDF. Plain ASCII,
+// which the PDF font can always draw.
+export const DRAFT_NOTICE: Block = {
+  type: "notice",
+  title: "DRAFT - SUBJECT TO LEGAL REVIEW",
+  text: "This document is a draft prepared from Common Paper standard terms with the help of an AI assistant. It is not legal advice and has not been reviewed by a lawyer. Have it reviewed by a qualified attorney before you sign it or rely on it.",
+};
+
 const text = (value: string): Run => ({ type: "text", text: value });
 const bold = (value: string): Run => ({ type: "bold", text: value });
 
@@ -172,5 +180,6 @@ function buildKeyTermsPage(doc: DocumentDef, form: DocumentForm): Block[] {
 }
 
 export function buildCoverPage(doc: DocumentDef, form: DocumentForm): Block[] {
-  return doc.id === "mutual-nda" ? buildMutualNdaCoverPage(doc, form) : buildKeyTermsPage(doc, form);
+  const [title, ...rest] = doc.id === "mutual-nda" ? buildMutualNdaCoverPage(doc, form) : buildKeyTermsPage(doc, form);
+  return [title, DRAFT_NOTICE, ...rest];
 }
