@@ -58,6 +58,8 @@ Backend available at http://localhost:8000
 
 ## Implementation status
 
+All the Jira features so far (KAN-5 to KAN-9) are built and merged into `main`; KAN-9 was the last one, and no newer feature tickets exist yet.
+
 Done (KAN-5, KAN-6, KAN-7, KAN-8, KAN-9):
 - **Docker**: a multi-stage `Dockerfile` builds the Next.js frontend as a static export (`frontend/out`), which FastAPI serves at `/`, and copies `templates/` into the backend image. `docker-compose.yml` runs it on port 8000 and loads `.env`. The start/stop scripts in `scripts/` wrap `docker compose`.
 - **Backend** (`backend/app/`): FastAPI app factory (`main.py:create_app`) with `GET /api/health`, `POST /api/chat`, the auth API and the documents API. `db.py` deletes and recreates the SQLite database (`users`, `sessions`, `documents`) on every startup, so a restart signs everyone out and loses saved documents. Config (`config.py`) comes from env vars `DATABASE_PATH`, `STATIC_DIR`, `OPENROUTER_API_KEY`, `CORS_ORIGINS` (also allows credentials), `TEMPLATES_DIR` (defaults to the repo's `templates/`) and `COOKIE_SECURE` (off by default; Docker is plain HTTP); local runs also load the root `.env`. `deps.py` has the shared dependencies: a per-request connection (`get_db`) and the signed-in user (`current_user`, 401 otherwise). Tests use pytest (`uv run pytest`); `conftest.py` has `sign_up`, `signed_in_client` and `make_client` (a second browser).
