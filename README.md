@@ -2,9 +2,10 @@
 
 A platform for drafting common legal agreements from standard templates.
 
-The V1 foundation (KAN-6) packages the Mutual NDA creator as a FastAPI backend serving a
-statically exported Next.js frontend, in one Docker container. The user drafts the NDA by
-chatting with an AI assistant (KAN-7), which fills in the document as they answer. Sign-in is a
+A FastAPI backend serves a statically exported Next.js frontend, in one Docker container. The
+user chats with an AI assistant, which works out which of the 11 Common Paper agreements in
+`templates/` they need (KAN-8), then fills in the document as they answer (KAN-7). Asked for
+a document it can't draft, it says so and suggests the closest one it can. Sign-in is a
 placeholder for now: any name and email bring the user into the platform.
 
 ## Running it
@@ -26,16 +27,17 @@ so it is created from scratch every time the app starts.
 ```
 backend/     FastAPI app (uv project): the API, the database and the static frontend
 frontend/    Next.js app, exported as static files to frontend/out
-templates/   Legal agreement templates (Common Paper, CC BY 4.0), indexed in catalog.json
+templates/   Legal agreement templates (Common Paper, CC BY 4.0), indexed in catalog.json,
+             with each document's fillable fields in documents.json
 scripts/     Start/stop scripts, plus build_catalog.py for templates/catalog.json
 ```
 
 | Path | |
 |---|---|
 | `/` | Sign-in page |
-| `/nda/` | Mutual NDA creator (AI chat and live preview) |
+| `/documents/` | Document creator (AI chat and live preview) |
 | `/api/health` | Health check: `{"status": "ok", "db": "ok"}`, or 503 if the database is unavailable |
-| `/api/chat` | `POST {messages, form, today}` returns `{reply, updates}`, the assistant's next message and the NDA fields it filled in. 503 without an API key, 502 if the AI call fails |
+| `/api/chat` | `POST {messages, documentType, form, today}` returns `{reply, documentType, updates}`: the assistant's next message, the document if it changed, and the fields it filled in. 422 for an unknown document or a form that doesn't fit it, 503 without an API key, 502 if the AI call fails |
 
 ## Development
 
@@ -49,7 +51,8 @@ STATIC_DIR=../frontend/out uv run uvicorn app.main:create_app --factory --reload
 ```
 
 `STATIC_DIR` is optional; without it only the API is served. The database defaults to
-`backend/data/prelegal.db` (set `DATABASE_PATH` to change it). The backend reads
+`backend/data/prelegal.db` (set `DATABASE_PATH` to change it), and the documents are read from
+the repository's `templates/` (set `TEMPLATES_DIR` to change it). The backend reads
 `OPENROUTER_API_KEY` from the root `.env`.
 
 To use the chat from `next dev`, let the frontend call the backend across origins: start the

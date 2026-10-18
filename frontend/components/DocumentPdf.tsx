@@ -1,8 +1,8 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import { PDF_FONT_FAMILY, PDF_FONT_FILES } from "@/lib/nda/pdfFont";
-import type { Block, Run } from "@/lib/nda/types";
+import { PDF_FONT_FAMILY, PDF_FONT_FILES } from "@/lib/documents/pdfFont";
+import type { Block, Run } from "@/lib/documents/types";
 
-// Loaded only in the browser, when the user clicks Download (see NdaCreator).
+// Loaded only in the browser, when the user clicks Download (see DocumentCreator).
 
 // The built-in PDF fonts only cover Latin-1, so names like "Łukasz" would print wrongly.
 // `fontUrl` maps a font file name to where it can be fetched (public/fonts in the app).
@@ -32,6 +32,8 @@ const styles = StyleSheet.create({
   paragraph: { marginVertical: 2 },
   row: { flexDirection: "row", marginVertical: 2 },
   number: { width: 18 },
+  // "5.3" needs more room than "1." or "a.".
+  sectionNumber: { width: 26 },
   flex: { flex: 1 },
   checkbox: { width: 9, height: 9, borderWidth: 0.75, borderColor: "#000", marginTop: 3, marginRight: 8, fontSize: 7, textAlign: "center", lineHeight: 1.1 },
   bold: { fontWeight: "bold" },
@@ -42,6 +44,9 @@ const styles = StyleSheet.create({
   cell: { width: "37%", minHeight: 22, padding: 4, borderRightWidth: 0.75, borderBottomWidth: 0.75, borderColor: "#999" },
   headerCell: { fontWeight: "bold", textAlign: "center" },
 });
+
+// How far each level of nested clauses is indented.
+const NESTED_INDENT = 18;
 
 // Room for the header, Signature and Print Name rows.
 const SIGNATURE_TABLE_LEAD = 90;
@@ -83,8 +88,8 @@ function PdfBlock({ block }: { block: Block }) {
       );
     case "numbered":
       return (
-        <View style={styles.row} wrap>
-          <Text style={styles.number}>{block.number}.</Text>
+        <View style={[styles.row, { marginLeft: block.level * NESTED_INDENT }]} wrap>
+          <Text style={block.level === 1 ? styles.sectionNumber : styles.number}>{block.label}</Text>
           <Text style={styles.flex}>
             <Runs runs={block.runs} />
           </Text>
@@ -144,9 +149,9 @@ function PdfBlock({ block }: { block: Block }) {
   }
 }
 
-export function NdaPdf({ blocks }: { blocks: Block[] }) {
+export function DocumentPdf({ title, blocks }: { title: string; blocks: Block[] }) {
   return (
-    <Document title="Mutual Non-Disclosure Agreement" author="Common Paper (CC BY 4.0)">
+    <Document title={title} author="Common Paper (CC BY 4.0)">
       <Page size="LETTER" style={styles.page}>
         {blocks.map((block, i) => (
           <PdfBlock key={i} block={block} />

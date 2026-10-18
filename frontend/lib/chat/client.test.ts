@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { ChatError, MAX_MESSAGES, errorMessageFor, sendChat } from "./client";
 
-const request = { messages: [{ role: "user" as const, content: "Hi" }], form: { purpose: "" }, today: "2026-10-18" };
+const request = {
+  messages: [{ role: "user" as const, content: "Hi" }],
+  documentType: "mutual-nda",
+  form: { purpose: "" },
+  today: "2026-10-18",
+};
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -15,6 +20,13 @@ describe("sendChat", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
+  });
+
+  it("returns the document the AI switched to", async () => {
+    const result = { reply: "Let's draft a pilot agreement.", documentType: "pilot-agreement", updates: {} };
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(result));
+    await expect(sendChat({ ...request, documentType: null, form: {} }, fetchImpl)).resolves.toEqual(result);
+    expect(JSON.parse(fetchImpl.mock.calls[0][1]?.body as string)).toMatchObject({ documentType: null });
   });
 
   it("sends only the latest messages of a long conversation", async () => {
@@ -47,7 +59,12 @@ describe("sendChat", () => {
     await expect(sendChat(request, fetchImpl)).rejects.toThrow("Can’t reach the server");
   });
 
-  it.each([new Response("<html>not json</html>"), jsonResponse({ reply: 3 }), jsonResponse({ reply: "Hi", updates: null })])(
+  it.each([
+    new Response("<html>not json</html>"),
+    jsonResponse({ reply: 3 }),
+    jsonResponse({ reply: "Hi", updates: null }),
+    jsonResponse({ reply: "Hi", documentType: 7, updates: {} }),
+  ])(
     "rejects malformed responses",
     async (response) => {
       await expect(sendChat(request, vi.fn(async () => response))).rejects.toBeInstanceOf(ChatError);

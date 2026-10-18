@@ -32,7 +32,7 @@ export function LoginForm() {
 
   // Signing in updates the session, which brings the user into the platform.
   useEffect(() => {
-    if (status === "authenticated") router.replace("/nda");
+    if (status === "authenticated") router.replace("/documents");
   }, [status, router]);
 
   function submit(event: FormEvent) {

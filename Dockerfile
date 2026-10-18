@@ -16,6 +16,8 @@ WORKDIR /app/backend
 COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY backend/app ./app
+# The documents the AI chat drafts (catalog.json, documents.json); found at /app/templates by default.
+COPY templates/ /app/templates/
 COPY --from=frontend /repo/frontend/out /app/static
 
 # The database lives inside the container, so it starts from scratch on every `up`.

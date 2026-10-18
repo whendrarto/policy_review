@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 
 # The project root .env, for local runs. In Docker, compose supplies the environment instead.
 ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+# The repo's templates/ when run locally; the Docker image copies it to the same place.
+DEFAULT_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "templates"
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,8 @@ class Settings:
     openrouter_api_key: str | None = None
     # Origins allowed to call the API cross-origin, e.g. `next dev` on http://localhost:3000.
     cors_origins: tuple[str, ...] = ()
+    # catalog.json, documents.json and the legal text.
+    templates_dir: Path = DEFAULT_TEMPLATES_DIR
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -24,9 +28,11 @@ class Settings:
         load_dotenv(ROOT_ENV_FILE)
         static_dir = os.getenv("STATIC_DIR")
         cors_origins = os.getenv("CORS_ORIGINS", "")
+        templates_dir = os.getenv("TEMPLATES_DIR")
         return cls(
             database_path=Path(os.getenv("DATABASE_PATH", "data/prelegal.db")),
             static_dir=Path(static_dir) if static_dir else None,
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY") or None,
             cors_origins=tuple(origin.strip() for origin in cors_origins.split(",") if origin.strip()),
+            templates_dir=Path(templates_dir) if templates_dir else DEFAULT_TEMPLATES_DIR,
         )
