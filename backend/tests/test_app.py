@@ -30,11 +30,11 @@ def test_serves_login_page(client):
     assert "login page" in response.text
 
 
-def test_serves_nda_page_with_and_without_trailing_slash(client):
-    assert "nda page" in client.get("/nda/").text
-    response = client.get("/nda")
+def test_serves_documents_page_with_and_without_trailing_slash(client):
+    assert "documents page" in client.get("/documents/").text
+    response = client.get("/documents")
     assert response.status_code == 200
-    assert "nda page" in response.text
+    assert "documents page" in response.text
 
 
 def test_serves_pdf_fonts(client):

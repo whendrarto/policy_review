@@ -1,6 +1,8 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from app.config import Settings
+from app.config import DEFAULT_TEMPLATES_DIR, Settings
 from app.main import create_app
 
 
@@ -8,18 +10,23 @@ def test_settings_from_env(monkeypatch):
     monkeypatch.setattr("app.config.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.setenv("OPENROUTER_API_KEY", "abc")
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:3000, http://127.0.0.1:3000")
+    monkeypatch.setenv("TEMPLATES_DIR", "/app/templates")
     settings = Settings.from_env()
     assert settings.openrouter_api_key == "abc"
     assert settings.cors_origins == ("http://localhost:3000", "http://127.0.0.1:3000")
+    assert settings.templates_dir == Path("/app/templates")
 
 
 def test_settings_from_env_defaults(monkeypatch):
     monkeypatch.setattr("app.config.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    monkeypatch.delenv("TEMPLATES_DIR", raising=False)
     settings = Settings.from_env()
     assert settings.openrouter_api_key is None
     assert settings.cors_origins == ()
+    assert settings.templates_dir == DEFAULT_TEMPLATES_DIR
+    assert (settings.templates_dir / "documents.json").is_file()
 
 
 def test_cors_allows_only_configured_origins(tmp_path):

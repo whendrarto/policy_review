@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { Block, Run } from "@/lib/nda/types";
+import type { Block, Run } from "@/lib/documents/types";
 
 function Runs({ runs }: { runs: Run[] }) {
   return runs.map((run, i) => {
@@ -34,7 +34,7 @@ function Runs({ runs }: { runs: Run[] }) {
 }
 
 // Memoised because the Standard Terms blocks are the same objects on every render, so
-// typing in the form only re-renders the Cover Page.
+// a chat update only re-renders the cover page.
 const PreviewBlock = memo(function PreviewBlock({ block }: { block: Block }) {
   switch (block.type) {
     case "heading":
@@ -50,9 +50,10 @@ const PreviewBlock = memo(function PreviewBlock({ block }: { block: Block }) {
         </p>
       );
     case "numbered":
+      // Nested clauses are indented; their numbers ("5.3") need a wider column.
       return (
-        <p className="my-3 flex gap-2">
-          <span>{block.number}.</span>
+        <p className={`flex gap-2 ${block.level ? "my-2" : "my-3"}`} style={{ marginLeft: `${block.level * 1.5}rem` }}>
+          <span className={`shrink-0 ${block.level === 1 ? "min-w-8" : "min-w-5"}`}>{block.label}</span>
           <span>
             <Runs runs={block.runs} />
           </span>
@@ -107,7 +108,7 @@ const PreviewBlock = memo(function PreviewBlock({ block }: { block: Block }) {
   }
 });
 
-export function NdaPreview({ blocks }: { blocks: Block[] }) {
+export function DocumentPreview({ blocks }: { blocks: Block[] }) {
   return (
     <article className="mx-auto max-w-[8.5in] bg-white px-10 py-12 font-serif text-[15px] leading-relaxed text-zinc-900 shadow-md ring-1 ring-zinc-200 sm:px-16">
       {blocks.map((block, i) => (

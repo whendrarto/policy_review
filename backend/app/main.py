@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from . import api
 from .config import Settings
 from .db import init_db
+from .documents import load_registry
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -19,6 +20,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Prelegal", lifespan=lifespan)
     app.state.settings = settings
+    # Read up front, so a broken templates/ stops the app from starting.
+    app.state.registry = load_registry(settings.templates_dir)
     # Only needed when the frontend is served from another origin (next dev); Docker is same-origin.
     if settings.cors_origins:
         app.add_middleware(

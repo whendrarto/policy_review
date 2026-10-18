@@ -4,11 +4,13 @@
 
 This is a SaaS product to allow users to draft legal agreements based on templates in the templates directory.
 The user can carry out AI chat in order to establish what document they want and how to fill in the fields.
-The available documents are covered in the catalog.json file in the project root, included here:
+The available documents are covered in the templates/catalog.json file, included here:
 
-@catalog.json
+@templates/catalog.json
 
-The current implementation supports only the Mutual NDA, filled in via AI chat, behind a fake login. See "Implementation status" below.
+The fields the user fills in for each document are defined in templates/documents.json.
+
+The current implementation supports all 11 documents, chosen and filled in via AI chat, behind a fake login. See "Implementation status" below.
 
 ## Development process
 
@@ -56,15 +58,15 @@ Backend available at http://localhost:8000
 
 ## Implementation status
 
-Done (KAN-5, KAN-6, KAN-7):
-- **Docker**: a multi-stage `Dockerfile` builds the Next.js frontend as a static export (`frontend/out`), which FastAPI serves at `/`. `docker-compose.yml` runs it on port 8000 and loads `.env`. The start/stop scripts in `scripts/` wrap `docker compose`.
-- **Backend** (`backend/app/`): FastAPI app factory (`main.py:create_app`) with `GET /api/health` and `POST /api/chat`. `db.py` deletes and recreates the SQLite database (`users` table) on every startup. Config (`config.py`) comes from env vars `DATABASE_PATH`, `STATIC_DIR`, `OPENROUTER_API_KEY` and `CORS_ORIGINS`; local runs also load the root `.env`. Tests use pytest (`uv run pytest`).
-- **AI chat** (`backend/app/chat.py`): stateless. Each request sends the chat history, the current NDA and today's date. The model (LiteLLM, OpenRouter, Cerebras, Structured Outputs) returns a reply plus the fields it learned (null means unchanged). The backend validates those fields and returns only the ones that changed. A missing key gives 503 and an LLM failure gives 502. Tests swap the model through the `get_chat_model` dependency.
+Done (KAN-5, KAN-6, KAN-7, KAN-8):
+- **Docker**: a multi-stage `Dockerfile` builds the Next.js frontend as a static export (`frontend/out`), which FastAPI serves at `/`, and copies `templates/` into the backend image. `docker-compose.yml` runs it on port 8000 and loads `.env`. The start/stop scripts in `scripts/` wrap `docker compose`.
+- **Backend** (`backend/app/`): FastAPI app factory (`main.py:create_app`) with `GET /api/health` and `POST /api/chat`. `db.py` deletes and recreates the SQLite database (`users` table) on every startup. Config (`config.py`) comes from env vars `DATABASE_PATH`, `STATIC_DIR`, `OPENROUTER_API_KEY`, `CORS_ORIGINS` and `TEMPLATES_DIR` (defaults to the repo's `templates/`); local runs also load the root `.env`. Tests use pytest (`uv run pytest`).
+- **Documents** (`backend/app/documents.py`): the registry, loaded at startup from `templates/documents.json` and `catalog.json` (a mismatch stops the app). Fields have a kind (text, date, years, choice) and may be optional or carried over on a switch. For each document it builds, with `pydantic.create_model`, the model that checks the form and the strict Structured Outputs model the LLM answers in; a selection-only model is used before a document is chosen. party1/party2 take each document's two `partyRoles`.
+- **AI chat** (`chat.py`, `prompt.py`, `sanitize.py`): stateless. Each request sends the chat history, `documentType` (a catalog id or null), the form and today's date. The model (LiteLLM, OpenRouter, Cerebras, Structured Outputs, reasoning effort medium) returns a reply, a `documentType` (null unless choosing or switching) and the fields it learned (null means unchanged). The prompt lists the catalog; for an unsupported document the model explains and suggests the closest one. When the document changes, the backend carries the parties and carried fields (effective date, governing law, courts) over by key and asks the model again with the new document's schema, then returns the new `documentType`. The backend validates fields per kind and returns only the ones that changed. An unknown document or bad form gives 422, a missing key 503, an LLM failure 502. Tests swap the model through the `get_chat_model` dependency.
 - **Frontend** (`frontend/`): Next.js with Tailwind and vitest (`npm test`).
-  - `/` is the login page. The login is fake: name and email are stored in sessionStorage (`lib/auth/session.ts`), and no backend call is made. `AuthGate` redirects users who aren't signed in back to `/`.
-  - `/nda` is the Mutual NDA creator: an AI chat (`components/ChatPanel.tsx`, a generic chat UI), a live preview, and a PDF download via `@react-pdf/renderer`. `NdaCreator` holds the chat and the form state, `lib/chat/client.ts` calls the API, and `lib/nda/chat.ts` merges the AI's updates into the form. The conversation is kept in memory only. The legal text comes from `templates/`.
+  - `/` is the login page. The login is fake: name and email are stored in sessionStorage (`lib/auth/session.ts`), and no backend call is made. `AuthGate` redirects users who aren't signed in back to `/`, and signing in goes to `/documents`.
+  - `/documents` is the document creator: an AI chat (`components/ChatPanel.tsx`, a generic chat UI), a live preview (a list of the documents until one is chosen), and a PDF download via `@react-pdf/renderer`. `DocumentCreator` holds the chat and the draft (`{doc, form}` or null), `lib/chat/client.ts` calls the API, and `lib/documents/chat.ts` applies the reply (starting afresh on a document switch). `lib/documents/registry.ts` reads `documents.json` and `catalog.json`; `coverPage.ts` builds the NDA's cover page from its template and a generated Key Terms page for the other 10; `parse.ts` parses the nested numbered Standard Terms, which `terms.ts` loads per document on demand. Blank dates follow today. The conversation is kept in memory only. The legal text comes from `templates/`.
 
 Not yet implemented:
-- The other 10 document types.
 - Real sign up and sign in (`users.password_hash` is unused; there are no auth API endpoints).
 - Saving documents.

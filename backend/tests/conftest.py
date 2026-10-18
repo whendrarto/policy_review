@@ -8,10 +8,10 @@ from app.main import create_app
 @pytest.fixture
 def static_dir(tmp_path):
     root = tmp_path / "static"
-    (root / "nda").mkdir(parents=True)
+    (root / "documents").mkdir(parents=True)
     (root / "fonts").mkdir()
     (root / "index.html").write_text("<p>login page</p>")
-    (root / "nda" / "index.html").write_text("<p>nda page</p>")
+    (root / "documents" / "index.html").write_text("<p>documents page</p>")
     (root / "fonts" / "Tinos-Regular.ttf").write_bytes(b"font")
     return root
 

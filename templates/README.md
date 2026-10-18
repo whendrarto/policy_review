@@ -24,6 +24,7 @@ from their GitHub repositories.
 ```
 templates/
   catalog.json              # machine-readable index (generated)
+  documents.json            # the fields the user fills in for each document (hand-written)
   <template-id>/
     standard-terms.md       # Standard Terms, verbatim from Common Paper
     cover-page.md           # Cover Page, where Common Paper publishes one
@@ -63,7 +64,19 @@ python scripts/build_catalog.py --check   # verify it is up to date
 
 To add or update a template, copy the markdown into `templates/<id>/`, add or
 update its entry in `TEMPLATES` in `scripts/build_catalog.py` (including the
-source commit), and regenerate.
+source commit), regenerate, and add or update its entry in `documents.json`.
+
+## documents.json
+
+`documents.json` describes what the user fills in for each document: its two
+party roles and its fields (label, kind, description for the AI and the cover
+page, placeholder, and whether it is optional or carried over when the user
+switches documents). Its `about` entry explains the format. The backend and
+the frontend both read it. It must list the catalog's documents in catalog
+order, and the backend refuses to start otherwise. Each document's fields
+should cover its Variables; the backend tests check that (party roles,
+`Agreement` and `Notice Address` excepted). The frontend also needs a loader
+for each document's Standard Terms in `frontend/lib/documents/terms.ts`.
 
 ## License and attribution
 

@@ -1,10 +1,12 @@
 // Calls the backend's AI chat endpoint (POST /api/chat). The backend keeps no conversation
-// state, so every call sends the whole history plus the current document.
+// state, so every call sends the whole history plus the document being drafted, if any.
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
-export type ChatRequest<Form> = { messages: ChatMessage[]; form: Form; today: string };
-export type ChatResult<Updates> = { reply: string; updates: Updates };
+// `documentType` is a catalog id, or null before a document is chosen.
+export type ChatRequest<Form> = { messages: ChatMessage[]; documentType: string | null; form: Form; today: string };
+// `documentType` is set when the AI switched documents this turn.
+export type ChatResult<Updates> = { reply: string; documentType?: string | null; updates: Updates };
 
 export class ChatError extends Error {}
 
@@ -41,6 +43,7 @@ export async function sendChat<Form, Updates>(
   try {
     const result = (await response.json()) as ChatResult<Updates>;
     if (typeof result.reply !== "string" || typeof result.updates !== "object" || result.updates === null) throw new Error();
+    if (result.documentType != null && typeof result.documentType !== "string") throw new Error();
     return result;
   } catch {
     throw new ChatError(errorMessageFor(500));

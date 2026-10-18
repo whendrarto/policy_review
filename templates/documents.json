@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "about": "The fields the user fills in for each document in catalog.json, read by the backend (AI prompt, structured output schema, checks) and the frontend (cover page). party1 and party2 take the two partyRoles in order; the vendor-like side comes first, so carrying parties over when the user switches documents keeps each party on its side. Field kinds: text, date (blank means today), years (whole years, 1 to 99) and choice (one of options). carry marks fields (the effective date, governing law and courts) that keep their value when the user switches to another document with a field of the same key.",
+  "documents": [
+    {
+      "id": "mutual-nda",
+      "shortName": "Mutual NDA",
+      "partyRoles": ["Party 1", "Party 2"],
+      "fields": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "kind": "text",
+          "default": "Evaluating whether to enter into a business relationship with the other party.",
+          "description": "How Confidential Information may be used, e.g. \"Evaluating whether to enter into a business relationship with the other party.\""
+        },
+        {
+          "key": "effectiveDate",
+          "label": "Effective Date",
+          "kind": "date",
+          "carry": true,
+          "description": "The date the agreement starts."
+        },
+        {
+          "key": "mndaTerm",
+          "label": "MNDA Term",
+          "kind": "choice",
+          "options": ["expires", "untilTerminated"],
+          "description": "\"expires\" (the MNDA expires mndaTermYears years after the Effective Date) or \"untilTerminated\" (it continues until either party terminates it)."
+        },
+        {
+          "key": "mndaTermYears",
+          "label": "MNDA Term years",
+          "kind": "years",
+          "default": 1,
+          "description": "Length of the MNDA in years. Only used when mndaTerm is \"expires\"."
+        },
+        {
+          "key": "confidentialityTerm",
+          "label": "Term of Confidentiality",
+          "kind": "choice",
+          "options": ["years", "perpetual"],
+          "description": "\"years\" (confidentiality lasts confidentialityYears years after the Effective Date; trade secrets stay protected while they remain trade secrets) or \"perpetual\"."
+        },
+        {
+          "key": "confidentialityYears",
+          "label": "Term of Confidentiality years",
+          "kind": "years",
+          "default": 1,
+          "description": "Years confidentiality lasts. Only used when confidentialityTerm is \"years\"."
+        },
+        {
+          "key": "governingLaw",
+          "label": "Governing Law",
+          "kind": "text",
+          "carry": true,
+          "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"."
+        },
+        {
+          "key": "chosenCourts",
+          "label": "Jurisdiction",
+          "kind": "text",
+          "carry": true,
+          "description": "The courts with jurisdiction, e.g. \"courts located in New Castle, DE\"."
+        },
+        {
+          "key": "modifications",
+          "label": "MNDA Modifications",
+          "kind": "text",
+          "optional": true,
+          "description": "Changes to the Standard Terms, if any."
+        }
+      ]
+    },
+    {
+      "id": "cloud-service-agreement",
+      "shortName": "Cloud Service Agreement",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "group": "Key Terms", "description": "The date the agreement starts." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "group": "Key Terms", "placeholder": "e.g. fees paid in the 12 months before the claim", "description": "The most each party can be liable for, e.g. \"the fees paid or payable in the 12 months before the claim\" or \"$100,000\"." },
+        { "key": "providerCoveredClaim", "label": "Provider Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims that the Cloud Service infringes third-party IP", "description": "Third-party claims the Provider will defend the Customer against, e.g. \"claims that the Cloud Service infringes a third party's intellectual property rights\"." },
+        { "key": "customerCoveredClaim", "label": "Customer Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims arising from Customer Content", "description": "Third-party claims the Customer will defend the Provider against, e.g. \"claims arising from Customer Content or the Customer's breach of the usage restrictions\"." },
+        { "key": "dpa", "label": "DPA", "kind": "text", "group": "Key Terms", "optional": true, "description": "The data processing agreement between the parties, if any, e.g. \"the Common Paper DPA signed on the Effective Date\"." },
+        { "key": "orderDate", "label": "Order Date", "kind": "text", "group": "Order Form", "placeholder": "e.g. the Effective Date", "description": "When the Order Form starts, e.g. \"the Effective Date\" or a specific date." },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text", "group": "Order Form", "placeholder": "e.g. 1 year from the Order Date", "description": "How long the subscription lasts, e.g. \"1 year from the Order Date\"." },
+        { "key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "kind": "text", "group": "Order Form", "placeholder": "e.g. 30 days before the end of the Subscription Period", "description": "The deadline for giving notice of non-renewal, e.g. \"30 days before the end of the current Subscription Period\"." },
+        { "key": "technicalSupport", "label": "Technical Support", "kind": "text", "group": "Order Form", "placeholder": "e.g. email support during business hours", "description": "The support the Provider gives, e.g. \"email support on business days, 9am to 5pm Eastern\"." }
+      ]
+    },
+    {
+      "id": "software-license-agreement",
+      "shortName": "Software License Agreement",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "group": "Key Terms", "description": "The date the agreement starts." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "group": "Key Terms", "placeholder": "e.g. fees paid in the 12 months before the claim", "description": "The most each party can be liable for, e.g. \"the fees paid or payable in the 12 months before the claim\"." },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims subject to the higher Increased Cap Amount instead of the general cap, if any, e.g. \"breaches of confidentiality\"." },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text", "group": "Key Terms", "optional": true, "description": "The higher cap for Increased Claims, if any, e.g. \"3 times the General Cap Amount\"." },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims with no liability cap, if any, e.g. \"a party's indemnification obligations\"." },
+        { "key": "providerCoveredClaim", "label": "Provider Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims that the Software infringes third-party IP", "description": "Third-party claims the Provider will defend the Customer against, e.g. \"claims that the Software infringes a third party's intellectual property rights\"." },
+        { "key": "customerCoveredClaim", "label": "Customer Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims arising from the Customer's misuse of the Software", "description": "Third-party claims the Customer will defend the Provider against, e.g. \"claims arising from the Customer's use of the Software in breach of this Agreement\"." },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "text", "group": "Key Terms", "optional": true, "description": "Extra warranties beyond the Standard Terms, if any." },
+        { "key": "orderDate", "label": "Order Date", "kind": "text", "group": "Order Form", "placeholder": "e.g. the Effective Date", "description": "When the Order Form starts, e.g. \"the Effective Date\" or a specific date." },
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text", "group": "Order Form", "placeholder": "e.g. 1 year from the Order Date", "description": "How long the license lasts, e.g. \"1 year from the Order Date\"." },
+        { "key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "kind": "text", "group": "Order Form", "placeholder": "e.g. 30 days before the end of the Subscription Period", "description": "The deadline for giving notice of non-renewal, e.g. \"30 days before the end of the current Subscription Period\"." },
+        { "key": "licenseLimits", "label": "License Limits", "kind": "text", "group": "Order Form", "placeholder": "e.g. up to 50 users on 2 servers", "description": "Limits on use of the Software, e.g. \"up to 50 named users\" or \"2 production servers\"." },
+        { "key": "permittedUses", "label": "Permitted Uses", "kind": "text", "group": "Order Form", "placeholder": "e.g. internal business purposes", "description": "What the Customer may use the Software for, e.g. \"the Customer's internal business purposes\"." },
+        { "key": "paymentProcess", "label": "Payment Process", "kind": "text", "group": "Order Form", "placeholder": "e.g. invoiced annually in advance, due within 30 days", "description": "How fees are invoiced and paid, e.g. \"invoiced annually in advance, payable within 30 days\"." },
+        { "key": "warrantyPeriod", "label": "Warranty Period", "kind": "text", "group": "Order Form", "placeholder": "e.g. 90 days from delivery", "description": "How long the Software warranty lasts, e.g. \"90 days from delivery\"." },
+        { "key": "deletionProcedure", "label": "Deletion Procedure", "kind": "text", "group": "Order Form", "placeholder": "e.g. uninstall and certify deletion within 30 days", "description": "How the Customer removes the Software when the license ends, e.g. \"uninstall all copies and certify deletion in writing within 30 days\"." }
+      ]
+    },
+    {
+      "id": "professional-services-agreement",
+      "shortName": "Professional Services Agreement",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "group": "Key Terms", "description": "The date the agreement starts." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." },
+        { "key": "sowTerm", "label": "SOW Term", "kind": "text", "group": "Key Terms", "placeholder": "e.g. 6 months from the SOW start date", "description": "How long the Statement of Work lasts, e.g. \"6 months from the SOW start date\"." },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "group": "Key Terms", "placeholder": "e.g. fees paid in the 12 months before the claim", "description": "The most each party can be liable for, e.g. \"the fees paid or payable in the 12 months before the claim\"." },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims subject to the higher Increased Cap Amount instead of the general cap, if any, e.g. \"breaches of confidentiality\"." },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text", "group": "Key Terms", "optional": true, "description": "The higher cap for Increased Claims, if any, e.g. \"3 times the General Cap Amount\"." },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims with no liability cap, if any, e.g. \"a party's indemnification obligations\"." },
+        { "key": "providerCoveredClaim", "label": "Provider Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims that the Deliverables infringe third-party IP", "description": "Third-party claims the Provider will defend the Customer against, e.g. \"claims that the Deliverables infringe a third party's intellectual property rights\"." },
+        { "key": "customerCoveredClaim", "label": "Customer Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims arising from materials the Customer provides", "description": "Third-party claims the Customer will defend the Provider against, e.g. \"claims arising from materials the Customer provides\"." },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "text", "group": "Key Terms", "optional": true, "description": "Extra warranties beyond the Standard Terms, if any." },
+        { "key": "customerPolicies", "label": "Customer Policies", "kind": "text", "group": "Key Terms", "optional": true, "description": "Customer policies the Provider must follow, if any, e.g. \"the Customer's vendor code of conduct\"." },
+        { "key": "securityPolicy", "label": "Security Policy", "kind": "text", "group": "Key Terms", "optional": true, "description": "The security policy the Provider follows, if any, e.g. a link to the Provider's security page." },
+        { "key": "insuranceMinimums", "label": "Insurance Minimums", "kind": "text", "group": "Key Terms", "optional": true, "description": "Minimum insurance coverage each party must carry, if any, e.g. \"$1,000,000 general liability\"." },
+        { "key": "dpa", "label": "DPA", "kind": "text", "group": "Key Terms", "optional": true, "description": "The data processing agreement between the parties, if any." },
+        { "key": "deliverable", "label": "Deliverable", "kind": "text", "group": "Statement of Work", "placeholder": "Describe the services and deliverables", "description": "The services and deliverables the Provider will provide, e.g. \"design and build a customer onboarding website\"." },
+        { "key": "fees", "label": "Fees", "kind": "text", "group": "Statement of Work", "placeholder": "e.g. $20,000 fixed fee", "description": "What the Customer pays, e.g. \"$20,000 fixed fee\" or \"$150 per hour\"." },
+        { "key": "paymentPeriod", "label": "Payment Period", "kind": "text", "group": "Statement of Work", "placeholder": "e.g. 30 days from invoice", "description": "When invoices must be paid, e.g. \"30 days from the invoice date\"." },
+        { "key": "rejectionPeriod", "label": "Rejection Period", "kind": "text", "group": "Statement of Work", "placeholder": "e.g. 10 business days", "description": "How long the Customer has to reject a Deliverable, e.g. \"10 business days after delivery\"." },
+        { "key": "resubmissionPeriod", "label": "Resubmission Period", "kind": "text", "group": "Statement of Work", "placeholder": "e.g. 10 business days", "description": "How long the Provider has to fix and resubmit a rejected Deliverable, e.g. \"10 business days\"." },
+        { "key": "timeOfAssignment", "label": "Time of Assignment", "kind": "text", "group": "Statement of Work", "placeholder": "e.g. on full payment of the Fees", "description": "When ownership of the Deliverables passes to the Customer, e.g. \"when the Customer pays the Fees in full\"." },
+        { "key": "customerObligations", "label": "Customer Obligations", "kind": "text", "group": "Statement of Work", "optional": true, "description": "What the Customer must provide, if anything, e.g. \"access to staging systems and brand assets\"." }
+      ]
+    },
+    {
+      "id": "pilot-agreement",
+      "shortName": "Pilot Agreement",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "description": "The date the agreement starts." },
+        { "key": "pilotPeriod", "label": "Pilot Period", "kind": "text", "placeholder": "e.g. 90 days from the Effective Date", "description": "How long the Customer may evaluate the Product, e.g. \"90 days from the Effective Date\"." },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "placeholder": "e.g. $10,000", "description": "The most each party can be liable for, e.g. \"$10,000\"." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." }
+      ]
+    },
+    {
+      "id": "design-partner-agreement",
+      "shortName": "Design Partner Agreement",
+      "partyRoles": ["Provider", "Partner"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "description": "The date the agreement starts." },
+        { "key": "program", "label": "Program", "kind": "text", "placeholder": "Describe the design partner program", "description": "What the design partner program involves, e.g. \"early access to the beta, monthly feedback calls and a usage survey\"." },
+        { "key": "term", "label": "Term", "kind": "text", "placeholder": "e.g. 6 months from the Effective Date", "description": "How long the program lasts, e.g. \"6 months from the Effective Date\"." },
+        { "key": "fees", "label": "Fees", "kind": "text", "optional": true, "description": "What the Partner pays, if anything, e.g. \"none\" or \"$500 per month\"." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." }
+      ]
+    },
+    {
+      "id": "partnership-agreement",
+      "shortName": "Partnership Agreement",
+      "partyRoles": ["Company", "Partner"],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "date", "carry": true, "group": "Key Terms", "description": "The date the agreement starts." },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "Fill in state", "description": "The US state whose laws govern the agreement, e.g. \"Delaware\"." },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text", "carry": true, "group": "Key Terms", "placeholder": "e.g. courts located in New Castle, DE", "description": "The courts with exclusive jurisdiction over disputes, e.g. \"courts located in New Castle, DE\"." },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "group": "Key Terms", "placeholder": "e.g. amounts paid in the 12 months before the claim", "description": "The most each party can be liable for, e.g. \"the amounts paid or payable in the 12 months before the claim\"." },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims subject to the higher Increased Cap Amount instead of the general cap, if any." },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text", "group": "Key Terms", "optional": true, "description": "The higher cap for Increased Claims, if any." },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "text", "group": "Key Terms", "optional": true, "description": "Claims with no liability cap, if any." },
+        { "key": "companyCoveredClaim", "label": "Company Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims that the Company's Brand Elements infringe third-party IP", "description": "Third-party claims the Company will defend the Partner against, e.g. \"claims that the Company's Brand Elements infringe a third party's rights\"." },
+        { "key": "partnerCoveredClaim", "label": "Partner Covered Claim", "kind": "text", "group": "Key Terms", "placeholder": "e.g. claims that the Partner's Brand Elements infringe third-party IP", "description": "Third-party claims the Partner will defend the Company against, e.g. \"claims that the Partner's Brand Elements infringe a third party's rights\"." },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "text", "group": "Key Terms", "optional": true, "description": "Extra warranties beyond the Standard Terms, if any." },
+        { "key": "brandGuidelines", "label": "Brand Guidelines", "kind": "text", "group": "Key Terms", "optional": true, "description": "Brand guidelines each party must follow when using the other's brand, if any, e.g. a link." },
+        { "key": "dpa", "label": "DPA", "kind": "text", "group": "Key Terms", "optional": true, "description": "The data processing agreement between the parties, if any." },
+        { "key": "obligations", "label": "Obligations", "kind": "text", "group": "Business Terms", "placeholder": "Describe what each party will do", "description": "What each party will do in the partnership, e.g. \"the Partner refers customers; the Company pays a referral fee and provides sales materials\"." },
+        { "key": "territory", "label": "Territory", "kind": "text", "group": "Business Terms", "placeholder": "e.g. United States and Canada", "description": "Where the partnership applies, e.g. \"United States and Canada\" or \"worldwide\"." },
+        { "key": "paymentSchedule", "label": "Payment Schedule", "kind": "text", "group": "Business Terms", "placeholder": "e.g. 10% of first-year revenue, paid quarterly", "description": "What is paid and when, e.g. \"10% of first-year revenue from referred customers, paid quarterly\"." },
+        { "key": "paymentProcess", "label": "Payment Process", "kind": "text", "group": "Business Terms", "placeholder": "e.g. invoiced quarterly, due within 30 days", "description": "How payments are invoiced and made, e.g. \"invoiced quarterly, payable within 30 days\"." },
+        { "key": "endDate", "label": "End Date", "kind": "text", "group": "Business Terms", "placeholder": "e.g. 2 years from the Effective Date", "description": "When the partnership ends, e.g. \"2 years from the Effective Date\"." }
+      ]
+    },
+    {
+      "id": "service-level-agreement",
+      "shortName": "SLA",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text", "placeholder": "e.g. 1 year from the Order Date", "description": "The subscription period of the Order Form this SLA attaches to, e.g. \"1 year from the Order Date\"." },
+        { "key": "targetUptime", "label": "Target Uptime", "kind": "text", "placeholder": "e.g. 99.9% per month", "description": "The uptime the Provider commits to, e.g. \"99.9% per calendar month\"." },
+        { "key": "uptimeCredit", "label": "Uptime Credit", "kind": "text", "placeholder": "e.g. 10% of monthly fees", "description": "The service credit when uptime falls below target, e.g. \"10% of that month's fees\"." },
+        { "key": "targetResponseTime", "label": "Target Response Time", "kind": "text", "placeholder": "e.g. 4 business hours", "description": "How quickly the Provider responds to support requests, e.g. \"4 business hours for urgent issues\"." },
+        { "key": "responseTimeCredit", "label": "Response Time Credit", "kind": "text", "placeholder": "e.g. 5% of monthly fees", "description": "The service credit when a response is late, e.g. \"5% of that month's fees\"." },
+        { "key": "supportChannel", "label": "Support Channel", "kind": "text", "placeholder": "e.g. support@provider.com", "description": "Where the Customer sends support requests, e.g. \"support@provider.com\" or a support portal." },
+        { "key": "scheduledDowntime", "label": "Scheduled Downtime", "kind": "text", "placeholder": "e.g. Sundays 2-4am UTC, with 48 hours' notice", "description": "Planned maintenance windows that don't count against uptime, e.g. \"Sundays 2-4am UTC with 48 hours' notice\"." }
+      ]
+    },
+    {
+      "id": "ai-addendum",
+      "shortName": "AI Addendum",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "trainingData", "label": "Training Data", "kind": "text", "optional": true, "description": "Customer data the Provider may use to train models, if any, e.g. \"anonymised support tickets\". Blank means none: the Provider may not train on Customer data." },
+        { "key": "trainingPurposes", "label": "Training Purposes", "kind": "text", "optional": true, "description": "What models may be trained on the Training Data for, if any, e.g. \"improving the Provider's support assistant\"." },
+        { "key": "trainingRestrictions", "label": "Training Restrictions", "kind": "text", "optional": true, "description": "Limits on training, if any, e.g. \"models trained on Customer data may not be offered to other customers\"." },
+        { "key": "improvementRestrictions", "label": "Improvement Restrictions", "kind": "text", "optional": true, "description": "Limits on using inputs and outputs to improve the service without training, if any." }
+      ]
+    },
+    {
+      "id": "data-processing-agreement",
+      "shortName": "DPA",
+      "partyRoles": ["Provider", "Customer"],
+      "fields": [
+        { "key": "natureAndPurposeOfProcessing", "label": "Nature and Purpose of Processing", "kind": "text", "placeholder": "e.g. hosting and processing data to provide the service", "description": "What the Provider does with personal data and why, e.g. \"hosting and processing Customer data to provide the CRM service\"." },
+        { "key": "durationOfProcessing", "label": "Duration of Processing", "kind": "text", "placeholder": "e.g. the term of the Agreement", "description": "How long processing lasts, e.g. \"the term of the Agreement plus 30 days\"." },
+        { "key": "categoriesOfDataSubjects", "label": "Categories of Data Subjects", "kind": "text", "placeholder": "e.g. Customer's employees and end users", "description": "Whose personal data is processed, e.g. \"the Customer's employees and end customers\"." },
+        { "key": "categoriesOfPersonalData", "label": "Categories of Personal Data", "kind": "text", "placeholder": "e.g. names, emails, usage data", "description": "What kinds of personal data are processed, e.g. \"names, email addresses and usage data\"." },
+        { "key": "specialCategoryData", "label": "Special Category Data", "kind": "text", "optional": true, "description": "Sensitive data (health, biometric, etc.) processed, if any." },
+        { "key": "specialCategorySafeguards", "label": "Special Category Data Restrictions or Safeguards", "kind": "text", "optional": true, "description": "Extra safeguards for Special Category Data, if any." },
+        { "key": "frequencyOfTransfer", "label": "Frequency of Transfer", "kind": "text", "placeholder": "e.g. continuous", "description": "How often data is transferred, e.g. \"continuous\" or \"one-off\"." },
+        { "key": "approvedSubprocessors", "label": "Approved Subprocessors", "kind": "text", "placeholder": "e.g. AWS (hosting), Stripe (payments)", "description": "Subprocessors the Customer approves, e.g. \"Amazon Web Services (hosting)\" or a link to the Provider's list." },
+        { "key": "securityPolicy", "label": "Security Policy", "kind": "text", "placeholder": "e.g. a link to the Provider's security page", "description": "The Provider's security measures, e.g. a link to its security policy." },
+        { "key": "providerSecurityContact", "label": "Provider Security Contact", "kind": "text", "placeholder": "e.g. security@provider.com", "description": "Who to contact about security incidents, e.g. \"security@provider.com\"." },
+        { "key": "governingMemberState", "label": "Governing Member State", "kind": "text", "placeholder": "e.g. Ireland", "description": "The EU member state whose law governs the EU Standard Contractual Clauses, e.g. \"Ireland\"." }
+      ]
+    },
+    {
+      "id": "business-associate-agreement",
+      "shortName": "BAA",
+      "partyRoles": ["Provider", "Company"],
+      "fields": [
+        { "key": "effectiveDate", "label": "BAA Effective Date", "kind": "date", "carry": true, "description": "The date the BAA starts." },
+        { "key": "breachNotificationPeriod", "label": "Breach Notification Period", "kind": "text", "placeholder": "e.g. 10 business days after discovery", "description": "How quickly the Provider reports a breach of PHI, e.g. \"10 business days after discovery\"." },
+        { "key": "limitations", "label": "Limitations", "kind": "text", "optional": true, "description": "Limits on how the Provider may use or disclose PHI, if any, e.g. \"no offshore access to PHI\"." }
+      ]
+    }
+  ]
+}
