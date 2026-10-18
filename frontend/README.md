@@ -1,6 +1,15 @@
-# Mutual NDA Creator
+# Prelegal frontend
 
-Prototype web app (Jira KAN-5) for creating a Mutual Non-Disclosure Agreement.
+The Prelegal web app. It is exported as a static site (`npm run build` writes
+`out/`), which the FastAPI backend serves; see the [root README](../README.md).
+
+- **Sign-in** (`/`) — a placeholder until real authentication: any name and
+  email are kept in the tab's `sessionStorage` (`lib/auth/`), and
+  `components/AuthGate.tsx` sends signed-out visitors back to it.
+- **Mutual NDA Creator** (`/nda/`) — the KAN-5 prototype, described below.
+
+## Mutual NDA Creator
+
 The user fills in the key terms in a form, sees the
 [Common Paper Mutual NDA](https://commonpaper.com/standards/mutual-nda/1.0)
 with those terms filled in as they type, and downloads the completed document
@@ -15,7 +24,7 @@ npm install
 npm run dev      # http://localhost:3000
 npm test         # unit tests (Vitest)
 npm run lint
-npm run build
+npm run build    # static site in out/
 ```
 
 ## How it works

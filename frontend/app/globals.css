@@ -6,6 +6,15 @@
   --font-serif: "Times New Roman", Times, Georgia, serif;
 }
 
+/* Prelegal colour scheme (see CLAUDE.md). */
+@theme {
+  --color-accent: #ecad0a;
+  --color-primary: #209dd7;
+  --color-secondary: #753991;
+  --color-navy: #032147;
+  --color-muted: #888888;
+}
+
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
