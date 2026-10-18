@@ -2,14 +2,15 @@
 
 A platform for drafting common legal agreements from standard templates.
 
-The V1 foundation (KAN-6) packages the Mutual NDA creator prototype as a FastAPI backend
-serving a statically exported Next.js frontend, in one Docker container. Sign-in is a
+The V1 foundation (KAN-6) packages the Mutual NDA creator as a FastAPI backend serving a
+statically exported Next.js frontend, in one Docker container. The user drafts the NDA by
+chatting with an AI assistant (KAN-7), which fills in the document as they answer. Sign-in is a
 placeholder for now: any name and email bring the user into the platform.
 
 ## Running it
 
 Requires Docker with Docker Compose 2.24 or newer. Put `OPENROUTER_API_KEY` in a `.env` file in the
-project root (it is optional until the AI features arrive).
+project root. Without it the app runs, but the AI chat answers that it isn't configured.
 
 | | Start | Stop |
 |---|---|---|
@@ -32,8 +33,9 @@ scripts/     Start/stop scripts, plus build_catalog.py for templates/catalog.jso
 | Path | |
 |---|---|
 | `/` | Sign-in page |
-| `/nda/` | Mutual NDA creator |
+| `/nda/` | Mutual NDA creator (AI chat and live preview) |
 | `/api/health` | Health check: `{"status": "ok", "db": "ok"}`, or 503 if the database is unavailable |
+| `/api/chat` | `POST {messages, form, today}` returns `{reply, updates}`, the assistant's next message and the NDA fields it filled in. 503 without an API key, 502 if the AI call fails |
 
 ## Development
 
@@ -47,7 +49,12 @@ STATIC_DIR=../frontend/out uv run uvicorn app.main:create_app --factory --reload
 ```
 
 `STATIC_DIR` is optional; without it only the API is served. The database defaults to
-`backend/data/prelegal.db` (set `DATABASE_PATH` to change it).
+`backend/data/prelegal.db` (set `DATABASE_PATH` to change it). The backend reads
+`OPENROUTER_API_KEY` from the root `.env`.
+
+To use the chat from `next dev`, let the frontend call the backend across origins: start the
+backend with `CORS_ORIGINS=http://localhost:3000`, and the frontend with
+`NEXT_PUBLIC_API_BASE=http://localhost:8000`.
 
 Frontend (http://localhost:3000, see [frontend/README.md](frontend/README.md)):
 

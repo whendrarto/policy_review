@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import api
@@ -18,6 +19,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Prelegal", lifespan=lifespan)
     app.state.settings = settings
+    # Only needed when the frontend is served from another origin (next dev); Docker is same-origin.
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_origins),
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
+        )
     app.include_router(api.router)
     # Mounted last so it never shadows the API. html=True serves dir/index.html, which
     # matches the frontend's static export (trailingSlash: true).
