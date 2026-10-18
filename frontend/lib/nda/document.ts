@@ -15,8 +15,8 @@ function field(value: string, placeholder: string): Run {
   return trimmed ? { type: "field", text: trimmed, filled: true } : { type: "field", text: `[${placeholder}]`, filled: false };
 }
 
-export const MIN_YEARS = 1;
-export const MAX_YEARS = 99;
+const MIN_YEARS = 1;
+const MAX_YEARS = 99;
 
 export function isValidYears(years: number): boolean {
   return Number.isInteger(years) && years >= MIN_YEARS && years <= MAX_YEARS;
