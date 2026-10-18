@@ -57,11 +57,11 @@ export function NdaCreator({ standardTerms }: { standardTerms: Block[] }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col lg:h-screen">
+    <div className="flex flex-1 flex-col lg:min-h-0">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-6 py-3">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">Mutual NDA Creator</h1>
-          <p className="text-xs text-zinc-500">Common Paper Mutual NDA v1.0</p>
+          <h1 className="text-lg font-semibold text-navy">Mutual NDA Creator</h1>
+          <p className="text-xs text-muted">Common Paper Mutual NDA v1.0</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-xs ${blankFields ? "text-amber-700" : "text-emerald-700"}`} aria-live="polite">

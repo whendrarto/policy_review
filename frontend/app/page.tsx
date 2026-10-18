@@ -1,6 +1,5 @@
-import { NdaCreator } from "@/components/NdaCreator";
-import { loadStandardTerms } from "@/lib/nda/template";
+import { LoginForm } from "@/components/LoginForm";
 
 export default function Home() {
-  return <NdaCreator standardTerms={loadStandardTerms()} />;
+  return <LoginForm />;
 }
