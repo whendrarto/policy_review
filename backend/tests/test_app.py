@@ -1,7 +1,10 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+
+from conftest import PAGES
 
 
 def test_health_ok(client):
@@ -27,14 +30,19 @@ def test_startup_creates_fresh_database(settings):
 def test_serves_login_page(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert "login page" in response.text
+    assert "landing page" in response.text
 
 
-def test_serves_documents_page_with_and_without_trailing_slash(client):
-    assert "documents page" in client.get("/documents/").text
-    response = client.get("/documents")
+@pytest.mark.parametrize("page", PAGES)
+def test_serves_pages_with_and_without_trailing_slash(client, page):
+    assert f"{page} page" in client.get(f"/{page}/").text
+    response = client.get(f"/{page}")
     assert response.status_code == 200
-    assert "documents page" in response.text
+    assert f"{page} page" in response.text
+
+
+def test_serves_the_editor_for_a_saved_document(client):
+    assert "editor page" in client.get("/editor/?id=12").text
 
 
 def test_serves_pdf_fonts(client):

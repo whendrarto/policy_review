@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { onUnauthorized } from "../api";
 import { ChatError, MAX_MESSAGES, errorMessageFor, sendChat } from "./client";
+import { jsonResponse } from "../test-utils";
 
 const request = {
   messages: [{ role: "user" as const, content: "Hi" }],
@@ -8,15 +10,13 @@ const request = {
   today: "2026-10-18",
 };
 
-const jsonResponse = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-
 describe("sendChat", () => {
   it("posts the request and returns the reply", async () => {
     const fetchImpl = vi.fn(async () => jsonResponse({ reply: "Hello", updates: { purpose: "Hiring" } }));
     await expect(sendChat(request, fetchImpl)).resolves.toEqual({ reply: "Hello", updates: { purpose: "Hiring" } });
     expect(fetchImpl).toHaveBeenCalledWith("/api/chat", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
@@ -27,6 +27,16 @@ describe("sendChat", () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(result));
     await expect(sendChat({ ...request, documentType: null, form: {} }, fetchImpl)).resolves.toEqual(result);
     expect(JSON.parse(fetchImpl.mock.calls[0][1]?.body as string)).toMatchObject({ documentType: null });
+  });
+
+  it("signs the user out when the session has ended", async () => {
+    const listener = vi.fn();
+    const unsubscribe = onUnauthorized(listener);
+    const error = await sendChat(request, vi.fn(async () => jsonResponse({ detail: "Not signed in." }, 401))).catch((err: unknown) => err);
+    unsubscribe();
+    expect(error).toBeInstanceOf(ChatError);
+    expect((error as ChatError).message).toBe("Your session has ended. Please sign in again.");
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it("sends only the latest messages of a long conversation", async () => {

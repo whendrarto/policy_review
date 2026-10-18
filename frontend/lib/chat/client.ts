@@ -1,5 +1,8 @@
-// Calls the backend's AI chat endpoint (POST /api/chat). The backend keeps no conversation
-// state, so every call sends the whole history plus the document being drafted, if any.
+import { ApiError, GENERIC_ERROR, apiRequest } from "../api";
+
+// Calls the backend's AI chat endpoint (POST /api/chat), which needs a signed-in user. The
+// backend keeps no conversation state, so every call sends the whole history plus the document
+// being drafted, if any.
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -15,37 +18,34 @@ export class ChatError extends Error {}
 export const MAX_MESSAGES = 40;
 export const MAX_MESSAGE_LENGTH = 2000;
 
-// Empty in production, where FastAPI serves the site and the API from one origin. Under
-// `next dev` set NEXT_PUBLIC_API_BASE=http://localhost:8000 (and CORS_ORIGINS on the backend).
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
-
 export function errorMessageFor(status: number): string {
+  if (status === 401) return "Your session has ended. Please sign in again.";
   if (status === 503) return "The AI assistant isn’t configured on this server.";
   if (status === 502) return "The AI assistant had a problem. Please try again.";
-  return "Something went wrong. Please try again.";
+  return GENERIC_ERROR;
 }
+
+const isChatResult = (value: unknown): value is ChatResult<unknown> => {
+  const result = value as ChatResult<unknown> | undefined;
+  return (
+    typeof result?.reply === "string" &&
+    typeof result.updates === "object" &&
+    result.updates !== null &&
+    (result.documentType == null || typeof result.documentType === "string")
+  );
+};
 
 export async function sendChat<Form, Updates>(
   request: ChatRequest<Form>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<ChatResult<Updates>> {
-  let response: Response;
+  let result: unknown;
   try {
-    response = await fetchImpl(`${API_BASE}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...request, messages: request.messages.slice(-MAX_MESSAGES) }),
-    });
-  } catch {
-    throw new ChatError("Can’t reach the server. Check your connection and try again.");
+    result = await apiRequest("/api/chat", { method: "POST", body: { ...request, messages: request.messages.slice(-MAX_MESSAGES) }, fetchImpl });
+  } catch (err) {
+    // A network failure (status 0) keeps apiRequest's message; HTTP errors get the chat's own.
+    throw new ChatError(err instanceof ApiError && err.status === 0 ? err.message : errorMessageFor(err instanceof ApiError ? err.status : 500));
   }
-  if (!response.ok) throw new ChatError(errorMessageFor(response.status));
-  try {
-    const result = (await response.json()) as ChatResult<Updates>;
-    if (typeof result.reply !== "string" || typeof result.updates !== "object" || result.updates === null) throw new Error();
-    if (result.documentType != null && typeof result.documentType !== "string") throw new Error();
-    return result;
-  } catch {
-    throw new ChatError(errorMessageFor(500));
-  }
+  if (!isChatResult(result)) throw new ChatError(errorMessageFor(500));
+  return result as ChatResult<Updates>;
 }

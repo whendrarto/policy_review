@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/chat/client";
+import { Button } from "./ui/Button";
+import { inputClass } from "./ui/Field";
 
 type ChatPanelProps = {
   messages: ChatMessage[];
@@ -69,7 +71,7 @@ export function ChatPanel({ messages, pending, error, onSend, onRetry }: ChatPan
         )}
       </div>
 
-      <form onSubmit={submit} className="flex items-end gap-2 border-t border-zinc-200 p-3">
+      <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t border-zinc-200 p-3">
         <label htmlFor="chat-input" className="sr-only">
           Message
         </label>
@@ -81,15 +83,12 @@ export function ChatPanel({ messages, pending, error, onSend, onRetry }: ChatPan
           onKeyDown={handleKeyDown}
           maxLength={MAX_MESSAGE_LENGTH}
           placeholder="Type your answer…"
-          className="flex-1 resize-none rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-xs focus:border-primary focus:ring-2 focus:ring-primary/30 focus:outline-none"
+          className={`${inputClass} min-w-0 flex-1 resize-none`}
         />
-        <button
-          type="submit"
-          disabled={!canSend}
-          className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 disabled:opacity-60"
-        >
+        <Button type="submit" variant="submit" disabled={!canSend}>
           Send
-        </button>
+        </Button>
+        <p className="w-full text-[11px] text-zinc-600">Press Enter to send, Shift+Enter for a new line.</p>
       </form>
     </div>
   );

@@ -2,24 +2,37 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { useSession } from "@/lib/auth/useSession";
+import { useAuth, type AuthStatus } from "@/lib/auth/AuthProvider";
+import { PageSpinner } from "./ui/Spinner";
 
-/** Shows its children only to a signed-in user, sending anyone else to the login page. */
-export function AuthGate({ children }: { children: ReactNode }) {
+// The pages are static files, so who may see them can only be checked in the browser; the API
+// enforces it for the data.
+
+function Gate({ allow, redirectTo, children }: { allow: AuthStatus; redirectTo: string; children: ReactNode }) {
   const router = useRouter();
-  const { status } = useSession();
+  const { status } = useAuth();
 
-  // The pages are static files, so the check can only happen in the browser.
   useEffect(() => {
-    if (status === "unauthenticated") router.replace("/");
-  }, [status, router]);
+    if (status !== "loading" && status !== allow) router.replace(redirectTo);
+  }, [status, allow, redirectTo, router]);
 
-  if (status !== "authenticated") {
-    return (
-      <p className="flex flex-1 items-center justify-center text-sm text-muted" role="status">
-        Loading…
-      </p>
-    );
-  }
-  return children;
+  return status === allow ? children : <PageSpinner />;
+}
+
+/** Shows its children only to a signed-in user, sending anyone else to the sign-in page. */
+export function AuthGate({ children }: { children: ReactNode }) {
+  return (
+    <Gate allow="authenticated" redirectTo="/signin/">
+      {children}
+    </Gate>
+  );
+}
+
+/** Shows its children only when signed out (sign in, sign up), sending users to their documents. */
+export function GuestGate({ children }: { children: ReactNode }) {
+  return (
+    <Gate allow="unauthenticated" redirectTo="/documents/">
+      {children}
+    </Gate>
+  );
 }

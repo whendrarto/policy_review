@@ -19,6 +19,8 @@ export type Block =
   // what is printed before it ("1.", "5.3", "a.") and `level` how deeply it is nested (0 to 3).
   | { type: "numbered"; number: string; label: string; level: number; runs: Run[] }
   | { type: "option"; checked: boolean; runs: Run[] }
+  // A boxed notice, such as the draft disclaimer on every cover page.
+  | { type: "notice"; title: string; text: string }
   // Signature table; `intro` is the sentence kept on the same page as the table.
   | { type: "parties"; intro: Run[]; headers: [string, string]; rows: PartyRow[] }
   | { type: "pageBreak" };

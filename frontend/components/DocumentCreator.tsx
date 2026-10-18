@@ -1,16 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ChatError, errorMessageFor, sendChat, type ChatMessage } from "@/lib/chat/client";
+import { createAutosaver, type SaveStatus } from "@/lib/documents/autosave";
 import { GREETING, applyChatResult, toWireForm, type ChatUpdates, type Draft } from "@/lib/documents/chat";
-import { buildDocument, countBlankFields, pdfFileName } from "@/lib/documents/document";
+import { buildDocument, countBlankFields } from "@/lib/documents/document";
+import { downloadPdf } from "@/lib/documents/pdf";
 import { unsupportedPdfChars } from "@/lib/documents/pdfFont";
 import { DOCUMENTS, formTexts, resolveForm } from "@/lib/documents/registry";
+import { createSaved, updateSaved } from "@/lib/documents/saved";
 import { loadStandardTerms } from "@/lib/documents/terms";
 import { subscribeToDateChange, todayIso } from "@/lib/documents/today";
 import type { Block } from "@/lib/documents/types";
 import { ChatPanel } from "./ChatPanel";
 import { DocumentPreview } from "./DocumentPreview";
+import { Alert } from "./ui/Alert";
+import { Button } from "./ui/Button";
+import { Spinner } from "./ui/Spinner";
 
 /** The Standard Terms of a document: null while they download, "failed" if they couldn't. */
 function useStandardTerms(id: string | undefined): Block[] | null | "failed" {
@@ -32,17 +39,25 @@ function useStandardTerms(id: string | undefined): Block[] | null | "failed" {
   return loaded && loaded.id === id ? loaded.terms : null;
 }
 
-export function DocumentCreator() {
+/** A saved document reopened in the editor. */
+export type SavedDraft = { id: number; draft: Draft; messages: ChatMessage[] };
+
+export function DocumentCreator({ initial, onCreated }: { initial?: SavedDraft; onCreated?: (id: number) => void }) {
   // Blank dates follow today until the AI sets one. The date is read on the client only, so
   // the prerendered page (built on another day) hydrates without a mismatch.
   const today = useSyncExternalStore(subscribeToDateChange, () => todayIso(), () => "");
-  const [draft, setDraft] = useState<Draft>(null);
+  const [draft, setDraft] = useState<Draft>(initial?.draft ?? null);
   const doc = draft?.doc;
 
-  // The conversation lives only in this page; reloading starts a new draft.
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", content: GREETING }]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages.length ? initial.messages : [{ role: "assistant", content: GREETING }]);
   const [chatPending, setChatPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+
+  // Once a document is chosen, the draft and the conversation are saved after every reply.
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>(initial ? "saved" : "idle");
+  const [autosaver] = useState(() =>
+    createAutosaver({ create: createSaved, update: updateSaved, onCreated, onStatus: setSaveStatus, id: initial?.id }),
+  );
 
   // `history` ends with the user's message. The input can't send while a reply is pending,
   // so `draft` is still current when the reply arrives.
@@ -56,8 +71,11 @@ export function DocumentCreator() {
         form: draft ? toWireForm(draft.form) : {},
         today: today || todayIso(),
       });
-      setMessages([...history, { role: "assistant", content: result.reply }]);
-      setDraft(applyChatResult(draft, result));
+      const nextMessages: ChatMessage[] = [...history, { role: "assistant", content: result.reply }];
+      const nextDraft = applyChatResult(draft, result);
+      setMessages(nextMessages);
+      setDraft(nextDraft);
+      if (nextDraft) void autosaver.save({ documentType: nextDraft.doc.id, form: toWireForm(nextDraft.form), messages: nextMessages });
     } catch (err) {
       // sendChat reports its own failures as ChatError; anything else is a bug here.
       if (err instanceof ChatError) setChatError(err.message);
@@ -90,17 +108,7 @@ export function DocumentCreator() {
     setPdfDownloading(true);
     setPdfError(null);
     try {
-      // react-pdf is large and browser-only, so load it on demand.
-      const [{ pdf }, { DocumentPdf, registerPdfFonts }] = await Promise.all([import("@react-pdf/renderer"), import("./DocumentPdf")]);
-      registerPdfFonts((file) => new URL(`/fonts/${file}`, window.location.href).href);
-      const blob = await pdf(<DocumentPdf title={doc.name} blocks={blocks} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = pdfFileName(doc, form);
-      link.click();
-      // Revoking immediately can cancel the download in some browsers.
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      await downloadPdf(doc, form, blocks);
     } catch (err) {
       console.error(err);
       setPdfError("Could not generate the PDF. Please try again.");
@@ -111,39 +119,37 @@ export function DocumentCreator() {
 
   return (
     <div className="flex flex-1 flex-col lg:min-h-0">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-6 py-3">
-        <div>
-          <h1 className="text-lg font-semibold text-navy">{doc ? doc.name : "Document Creator"}</h1>
-          <p className="text-xs text-muted">{doc ? `Common Paper ${doc.shortName} v${doc.version}` : "Tell the assistant what you need"}</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-zinc-200 bg-white px-4 py-3 sm:px-6">
+        <div className="min-w-0">
+          <nav aria-label="Breadcrumb" className="text-xs text-zinc-600">
+            <Link href="/documents/" className="hover:text-navy hover:underline">
+              My documents
+            </Link>
+            <span aria-hidden> / </span>
+            <span>{doc ? doc.shortName : "New document"}</span>
+          </nav>
+          <h1 className="truncate text-lg font-semibold text-navy">{doc ? doc.name : "New document"}</h1>
         </div>
-        {doc && (
-          <div className="flex items-center gap-3">
-            {blocks && (
-              <span className={`text-xs ${blankFields ? "text-amber-700" : "text-emerald-700"}`} aria-live="polite">
-                {blankFields ? `${blankFields} field${blankFields === 1 ? "" : "s"} still blank` : "All fields filled in"}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={download}
-              disabled={pdfDownloading || !blocks}
-              className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 disabled:opacity-60"
-            >
+        <div className="flex flex-wrap items-center gap-3">
+          {doc && <SaveIndicator status={saveStatus} onRetry={() => void autosaver.retry()} />}
+          {blocks && (
+            <span className={`text-xs font-medium ${blankFields ? "text-amber-700" : "text-emerald-700"}`} aria-live="polite">
+              {blankFields ? `${blankFields} field${blankFields === 1 ? "" : "s"} to fill in` : "All fields filled in"}
+            </span>
+          )}
+          {doc && (
+            <Button variant="submit" onClick={download} loading={pdfDownloading} disabled={!blocks}>
               {pdfDownloading ? "Preparing PDF…" : "Download PDF"}
-            </button>
-          </div>
-        )}
+            </Button>
+          )}
+        </div>
         {unprintable.length > 0 && (
-          <p role="alert" className="w-full text-sm text-amber-800">
+          <Alert tone="warning" className="w-full">
             These characters can’t be printed in the PDF and will be missing from it: {unprintable.join(" ")}
-          </p>
+          </Alert>
         )}
-        {pdfError && (
-          <p role="alert" className="w-full text-sm text-red-700">
-            {pdfError}
-          </p>
-        )}
-      </header>
+        {pdfError && <Alert className="w-full">{pdfError}</Alert>}
+      </div>
 
       <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(340px,440px)_1fr]">
         <aside className="flex flex-col border-zinc-200 bg-white lg:min-h-0 lg:border-r" aria-label="Chat with the drafting assistant">
@@ -159,13 +165,13 @@ export function DocumentCreator() {
           {blocks ? (
             <DocumentPreview blocks={blocks} />
           ) : standardTerms === "failed" ? (
-            <p role="alert" className="text-center text-sm text-red-700">
-              Could not load the {doc?.name}. Check your connection and reload the page.
-            </p>
+            <Alert className="mx-auto max-w-md text-center">Could not load the {doc?.name}. Check your connection and reload the page.</Alert>
           ) : doc ? (
-            <p className="text-center text-sm text-muted">Loading the {doc.name}…</p>
+            <p className="flex items-center justify-center gap-2 text-sm text-muted" role="status">
+              <Spinner className="size-4 text-primary" /> Loading the {doc.name}…
+            </p>
           ) : (
-            <DocumentList />
+            <DocumentList onPick={(name) => sendMessage(`I’d like to draft ${/^[AEIOU]/.test(name) ? "an" : "a"} ${name}.`)} disabled={chatPending} />
           )}
         </main>
       </div>
@@ -173,17 +179,44 @@ export function DocumentCreator() {
   );
 }
 
-/** What the user can draft, shown until a document is chosen. */
-function DocumentList() {
+function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
+  if (status === "error") {
+    return (
+      <span className="flex items-center gap-2 text-xs font-medium text-red-700" role="alert">
+        Not saved
+        <button type="button" onClick={onRetry} className="underline hover:no-underline">
+          Retry
+        </button>
+      </span>
+    );
+  }
+  const label = { idle: "Not saved yet", saving: "Saving…", saved: "Saved" }[status];
   return (
-    <section className="mx-auto max-w-2xl">
-      <h2 className="text-base font-semibold text-navy">Documents you can draft</h2>
-      <p className="mt-1 text-sm text-muted">Tell the assistant about your deal and it will pick the right one with you.</p>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+    <span className="flex items-center gap-1.5 text-xs text-zinc-600" aria-live="polite">
+      {status === "saving" ? <Spinner className="size-3" /> : <span className={`size-2 rounded-full ${status === "saved" ? "bg-emerald-500" : "bg-zinc-300"}`} />}
+      {label}
+    </span>
+  );
+}
+
+/** What the user can draft, shown until a document is chosen; picking one asks the assistant for it. */
+function DocumentList({ onPick, disabled }: { onPick: (name: string) => void; disabled: boolean }) {
+  return (
+    <section className="mx-auto max-w-3xl">
+      <h2 className="text-lg font-semibold text-navy">What would you like to draft?</h2>
+      <p className="mt-1 text-sm text-muted">Describe your deal in the chat, or pick a document to start with.</p>
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2">
         {DOCUMENTS.map((doc) => (
-          <li key={doc.id} className="rounded-md border-l-4 border-primary bg-white p-3 shadow-xs">
-            <p className="text-sm font-medium text-navy">{doc.name}</p>
-            <p className="mt-1 text-xs text-muted">{doc.description}</p>
+          <li key={doc.id}>
+            <button
+              type="button"
+              onClick={() => onPick(doc.name)}
+              disabled={disabled}
+              className="h-full w-full rounded-lg border border-zinc-200 border-l-4 border-l-primary bg-white p-4 text-left shadow-xs transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
+            >
+              <span className="block text-sm font-semibold text-navy">{doc.name}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-zinc-600">{doc.description}</span>
+            </button>
           </li>
         ))}
       </ul>

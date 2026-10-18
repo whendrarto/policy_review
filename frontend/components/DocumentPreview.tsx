@@ -43,6 +43,13 @@ const PreviewBlock = memo(function PreviewBlock({ block }: { block: Block }) {
       return <h3 className="mt-5 mb-1 font-bold">{block.text}</h3>;
     case "note":
       return <p className="text-xs text-zinc-500 italic">{block.text}</p>;
+    case "notice":
+      return (
+        <aside className="my-5 rounded-sm border border-accent/60 border-l-4 border-l-accent bg-accent/10 px-4 py-3 font-sans text-sm">
+          <p className="font-semibold tracking-wide text-navy">{block.title}</p>
+          <p className="mt-1 text-zinc-700">{block.text}</p>
+        </aside>
+      );
     case "paragraph":
       return (
         <p className="my-2">

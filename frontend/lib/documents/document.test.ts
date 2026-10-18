@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import * as fontkit from "fontkit";
 import { describe, expect, it } from "vitest";
-import { buildCoverPage } from "./coverPage";
+import { DRAFT_NOTICE, buildCoverPage } from "./coverPage";
 import { blockRuns, buildDocument, countBlankFields, pdfFileName } from "./document";
 import { formatDate } from "./format";
 import { parseStandardTerms } from "./parse";
@@ -185,6 +185,29 @@ describe("generated Key Terms pages", () => {
     expect(intro(PILOT)).toBe("By signing these Key Terms, each party agrees to enter into this Pilot Agreement as of the Effective Date.");
     expect(intro(getDocument("business-associate-agreement")!)).toContain("as of the BAA Effective Date.");
     expect(intro(getDocument("service-level-agreement")!)).toBe("By signing these Key Terms, each party agrees to be bound by this Service Level Agreement.");
+  });
+});
+
+describe("the draft notice", () => {
+  it.each(DOCUMENTS.map((doc) => [doc.id, doc] as const))("sits under the title of the %s cover page", (_, doc) => {
+    const blocks = buildCoverPage(doc, defaultForm(doc));
+    expect(blocks[0]).toMatchObject({ type: "heading", level: 1 });
+    expect(blocks[1]).toBe(DRAFT_NOTICE);
+    expect(blocks.filter((block) => block.type === "notice")).toHaveLength(1);
+  });
+
+  it("says the document is a draft for legal review, in characters the PDF can print", () => {
+    expect(DRAFT_NOTICE).toMatchObject({ type: "notice", title: "DRAFT - SUBJECT TO LEGAL REVIEW" });
+    const notice = DRAFT_NOTICE.type === "notice" ? `${DRAFT_NOTICE.title} ${DRAFT_NOTICE.text}` : "";
+    expect(notice).toMatch(/not legal advice/);
+    expect(unsupportedPdfChars(notice)).toEqual([]);
+  });
+
+  it("leaves the Standard Terms and the blank-field count alone", () => {
+    const terms = parseStandardTerms(termsMarkdown("mutual-nda"));
+    const doc = buildDocument(NDA, defaultForm(NDA), terms);
+    expect(doc.slice(doc.findIndex((b) => b.type === "pageBreak") + 1)).toEqual(terms);
+    expect(countBlankFields(doc)).toBe(11);
   });
 });
 

@@ -70,6 +70,13 @@ export function applyChatResult(draft: Draft, result: { documentType?: string | 
   return draft && { doc: draft.doc, form: applyUpdates(draft.doc, draft.form, result.updates) };
 }
 
+/** A saved draft, from its document type and its form as toWireForm gave it; null for an unknown type. */
+export function restoreDraft(documentType: string, wireForm: Record<string, unknown>): Draft {
+  const doc = getDocument(documentType);
+  // Through applyUpdates, so a value that no longer fits the document is dropped rather than shown.
+  return doc ? { doc, form: applyUpdates(doc, defaultForm(doc), wireForm) } : null;
+}
+
 /** The form as the backend expects it: the field values plus party1 and party2. */
 export function toWireForm(form: DocumentForm): Record<string, unknown> {
   return { ...form.values, party1: form.party1, party2: form.party2 };

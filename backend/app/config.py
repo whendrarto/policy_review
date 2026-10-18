@@ -9,6 +9,9 @@ ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 # The repo's templates/ when run locally; the Docker image copies it to the same place.
 DEFAULT_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "templates"
 
+SESSION_COOKIE = "prelegal_session"
+SESSION_DAYS = 7
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -21,6 +24,8 @@ class Settings:
     cors_origins: tuple[str, ...] = ()
     # catalog.json, documents.json and the legal text.
     templates_dir: Path = DEFAULT_TEMPLATES_DIR
+    # Send the session cookie over HTTPS only. Off by default, because the Docker app is plain HTTP.
+    cookie_secure: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -35,4 +40,5 @@ class Settings:
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY") or None,
             cors_origins=tuple(origin.strip() for origin in cors_origins.split(",") if origin.strip()),
             templates_dir=Path(templates_dir) if templates_dir else DEFAULT_TEMPLATES_DIR,
+            cookie_secure=os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes"),
         )
